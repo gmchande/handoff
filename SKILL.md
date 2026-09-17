@@ -14,6 +14,22 @@ reviewing something you hand it. Herdr runs the pane; read `herdr --skill` for
 its mechanics and restate none of them here. Requires `HERDR_ENV=1`. One
 builder per repo at a time, and do not edit alongside it.
 
+## 0. Not a subagent
+
+A subagent, the background helper your own client spawns, and a handoff are
+different tools:
+
+- A subagent is invisible and ephemeral, answers only to you, and spends your
+  context. Right for mechanical work you can verify yourself afterwards: a
+  sweep, a search, a batch of repetitive commands.
+- A handoff is a visible pane the owner can watch, interrupt, and answer
+  dialogs for. It persists and takes follow-ups, and it spends its own CLI's
+  budget, not yours. Right for work that needs judgment, work the owner will
+  want to see, and anything long enough that they may want to steer it.
+
+When the owner's wording is ambiguous, say in one line which you are using
+before the work starts, so they can redirect.
+
 ## 1. Before launching
 
 Settle from the owner's request: the repo, the task (a plan file, a step of
