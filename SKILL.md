@@ -16,11 +16,14 @@ builder per repo at a time, and do not edit alongside it.
 
 ## 1. Before launching
 
-Settle four things from the owner's request: the repo, the task (a plan file,
-a step of one, an inline task, or a follow-up such as "go"), the builder, and
-any model or effort override. Run `git -C "$REPO" status` and note the branch
-and existing changes, so they are not blamed on the builder. If it is not a
-repo, say so and carry on.
+Settle from the owner's request: the repo, the task (a plan file, a step of
+one, an inline task, or a follow-up such as "go"), the builder, any model or
+effort override, and the loop, meaning the command the builder can run to
+check its own work. When no loop covers this change, that is the owner's call
+and not yours: ask before launching whether building one is part of the task,
+whether you check it yourself, or whether it ships unverified. Run
+`git -C "$REPO" status` and note the branch and existing changes, so they are
+not blamed on the builder. If it is not a repo, say so and carry on.
 
 ## 2. The brief
 
@@ -93,9 +96,12 @@ the report is cut off, ask the builder to write it to a file and read that.
 The builder's "done" is evidence, not the result. Run the named check
 yourself. Read the diff against the brief at the depth the change deserves.
 Tell the owner: holds up, worth changing, unverified. Send fixes back to the
-same builder. Findings from a review handoff are input, not authority: check
-each against the code. Reject pedantry, premature optimization, and
-over-engineering; a finding must name a concrete failure this code can produce.
+same builder. When it came back wrong in a way the named check would not have
+caught, the fix is the check, not only the code.
+
+Findings from a review handoff are input, not authority: check each against
+the code. Reject pedantry, premature optimization, and over-engineering; a
+finding must name a concrete failure this code can produce.
 
 ## 6. Ship
 
