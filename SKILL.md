@@ -34,8 +34,8 @@ before the work starts, so they can redirect.
 
 Settle from the owner's request: the repo, the task (a plan file, a step of
 one, an inline task, or a follow-up such as "go"), the builder, any model or
-effort override, and the loop, meaning the command the builder can run to
-check its own work. When no loop covers this change, that is the owner's call
+effort override, and the check, meaning the command the builder can run to
+test its own work. When no check covers this change, that is the owner's call
 and not yours: ask before launching whether building one is part of the task,
 whether you check it yourself, or whether it ships unverified. Run
 `git -C "$REPO" status` and note the branch and existing changes, so they are
