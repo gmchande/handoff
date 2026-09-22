@@ -86,10 +86,20 @@ herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
 
 | Builder | Kind | Args |
 | --- | --- | --- |
-| `opus` | claude | `--model opus --effort xhigh` |
+| `opus` | claude | `--model opus --effort high` |
 | `claude` | claude | configured defaults, which are not `opus` |
-| `codex` | codex | configured defaults; override with `-m MODEL -c model_reasoning_effort=LEVEL` |
+| `codex` | codex | `-m MODEL -c model_reasoning_effort=high` |
 | `cursor` | cursor | configured default; override with `--model MODEL` |
+| `omp` | omp | `--model PROVIDER/ID --thinking high`, with the provider as `omp models` groups it: `anthropic/claude-opus-5-5`, `openai-codex/gpt-6-sol`; a bare GPT id picks the keyless `openai` provider and fails |
+
+Effort is `high` unless the owner names another level.
+
+Model names by nickname ("sol", "astra", "opus", "fable"): resolve to the
+newest id that carries it, and pass that id. Codex's list is
+`~/.codex/models_cache.json` and its default is `model` in
+`~/.codex/config.toml`; omp's list is `omp models`, and its own fuzzy match
+must not be trusted for this (`--model sol` picks `gpt-5.6-sol` over
+`gpt-6-sol`, and `sonnet` a retired model). Claude takes the alias itself.
 
 Any other Herdr kind works with its own arguments. A follow-up like "go" goes
 to your builder; without one, there is nothing to continue. Run the long wait,
