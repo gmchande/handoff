@@ -19,19 +19,12 @@ only what you can't settle, with your recommendation.
 
 ## 0. Not a subagent
 
-A subagent, the background helper your own client spawns, and a handoff are
-different tools:
-
-- A subagent is invisible and ephemeral, answers only to you, and spends your
-  context. Right for mechanical work you can verify yourself afterwards: a
-  sweep, a search, a batch of repetitive commands.
-- A handoff is a visible pane the owner can watch, interrupt, and answer
-  dialogs for. It persists and takes follow-ups, and it spends its own CLI's
-  budget, not yours. Right for work that needs judgment, work the owner will
-  want to see, and anything long enough that they may want to steer it.
-
-When the owner's wording is ambiguous, say in one line which you are using
-before the work starts, so they can redirect.
+A subagent is invisible, answers only to you, and spends your context: right
+for mechanical work you can check afterwards, like a sweep or a search. A
+handoff is a visible pane the owner can watch, steer, and answer dialogs in;
+it persists, takes follow-ups, and spends its own CLI's budget: right for work
+that needs judgment or that the owner will want to see. When the owner's
+wording is ambiguous, say in one line which you are using.
 
 ## 1. Before launching
 
@@ -53,7 +46,8 @@ Every brief:
 - Your role: implementer for this task. For a review handoff, reviewer
   instead: read and report findings, change nothing; every finding names the
   concrete failure it causes, and pedantry, premature optimization, and
-  over-engineering are not findings.
+  over-engineering are not findings. Roles live in briefs, never in an
+  `AGENTS.md`, which every agent reads.
 - What to read first, by absolute path (a builder in another worktree cannot
   see this checkout's ignored files): the repo's instruction files, the
   owner's (`~/.agents/AGENTS.md`) when the work sits outside a repo or the
@@ -65,7 +59,9 @@ Every brief:
 - The stopping point: what to finish alone and what comes back to you.
   Default: commit and open a pull request as far as the repo's own rules
   allow, and stop with the work uncommitted where they say nothing. Report
-  what changed, the proof with its numbers, and what is unfinished.
+  what changed, the proof with its numbers, and what is unfinished. If the
+  owner's go comes later, relay it to the builder instead of committing
+  yourself.
 
 A build brief also:
 
@@ -86,8 +82,10 @@ A build brief also:
 ## 3. Launch
 
 Layout: you on the left of your tab with your reviewer on the right; builders
-in a separate tab, each with its own reviewer split down under it, every pane
-labelled.
+side by side in a separate tab, each with its own reviewer split down under
+it, every pane labelled. Each builder gets its own checkout and is told which
+files the others will change; one whose change touches another's files builds
+on that branch and rebases whenever it moves.
 
 Reviewers: one per big task, so none is asked two things at once and each
 remembers what it already reviewed. Yours reviews your plans before you brief
@@ -115,7 +113,7 @@ herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
 | `claude` | claude | configured defaults, which are not `opus` |
 | `codex` | codex | `-m MODEL -c model_reasoning_effort=high` |
 | `cursor` | cursor | configured default; override with `--model MODEL` |
-| `omp` | omp | `--model PROVIDER/ID --thinking high`, with the provider as `omp models` groups it: `anthropic/claude-opus-5-5`, `openai-codex/gpt-6-sol`; a bare GPT id picks the keyless `openai` provider and fails |
+| `omp` | omp | `--model PROVIDER/ID --thinking high`, with the provider as `omp models` groups it: `anthropic/claude-opus-5-5`, `openai-codex/gpt-6-astra`; a bare GPT id picks the keyless `openai` provider and fails |
 
 When the owner names no builder for a coding task, use `omp` with
 `anthropic/claude-opus-5-5`. Effort is `high` unless the owner names another
@@ -127,12 +125,7 @@ newest id that carries it, and pass that id. Codex's list is
 `~/.codex/config.toml`; omp's list is `omp models`, and its own fuzzy match
 must not be trusted for this (`--model sol` picks `gpt-5.6-sol` over
 `gpt-6-sol`, and `sonnet` a retired model). Claude takes the alias itself.
-
-Several builders at once: one per checkout, all in the builders tab side by
-side, each with its reviewer under it, and each told which files the others
-will change. A builder
-whose change touches files another is changing does not wait for that merge:
-it builds on the other's branch and rebases whenever that branch moves.
+The owner finds Sol subpar: don't pick it, even to save money.
 
 Any other Herdr kind works with its own arguments. A follow-up like "go" goes
 to your builder; without one, there is nothing to continue. Handle any
@@ -144,6 +137,7 @@ Every message you send a builder, follow-ups included, gets its own wait, and
 so does a builder that stopped to ask the owner, who may answer in its pane.
 When a builder stops to ask for a live run, tell the owner at once which pane
 is asking, so they can step away from the machine and give the go there.
+Live runs share one desktop, so keep them one at a time.
 Run the wait so its end reaches you without polling: in Claude Code, a
 background command that exits when the builder stops working. A builder
 waiting on the owner is already idle, so that wait first waits for it to
@@ -182,10 +176,3 @@ rule or check, else a line in the repo's instructions.
 Findings from a review handoff are input, not authority: check each against
 the code. Reject pedantry, premature optimization, and over-engineering; a
 finding must name a concrete failure this code can produce.
-
-## 6. Ship
-
-Unless the owner already authorized shipping, in the brief or through the
-repo's own rules, nothing is committed, pushed, or opened as a pull request
-until the owner says go. Then relay it to the builder, by the repo's own
-commit rules.
