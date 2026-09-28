@@ -59,7 +59,9 @@ Every brief:
   owner's (`~/.agents/AGENTS.md`) when the work sits outside a repo or the
   builder does not load it on its own (Cursor does not), then the plan or the
   files named.
-- The task. Expand "the two bugs above" into the bugs.
+- The task, as the outcome that must be true and the problem behind it; name
+  a method only when the repo's rules require one. Expand "the two bugs
+  above" into the bugs.
 - The stopping point: what to finish alone and what comes back to you.
   Default: commit and open a pull request as far as the repo's own rules
   allow, and stop with the work uncommitted where they say nothing. Report
