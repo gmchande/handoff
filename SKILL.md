@@ -93,7 +93,9 @@ builders, and anything else you want a second look at, until the plan is
 approved. A builder's reviewer starts with the builder and stays until its
 pull request merges. Codex with the newest Astra model at high effort,
 read-only. Each writes its reports to files and replies with a summary, so
-closing its pane loses nothing.
+closing its pane loses nothing. Close a finished pane by looking it up from
+its agent's name right then (`herdr agent get NAME`), then check with
+`herdr agent list` that the others in its tab are still there.
 
 Reuse the builder you started for this handoff: `herdr agent prompt` alone.
 Another session's idle agent in the same directory is not your builder. Start
