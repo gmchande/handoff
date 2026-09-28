@@ -14,6 +14,9 @@ reviewing something you hand it. Herdr runs the pane; read `herdr --skill` for
 its mechanics and restate none of them here. Requires `HERDR_ENV=1`. One
 builder per checkout (a worktree counts as one), and do not edit alongside it.
 
+Decide what your own judgment covers and say what you decided. Bring the owner
+only what you can't settle, with your recommendation.
+
 ## 0. Not a subagent
 
 A subagent, the background helper your own client spawns, and a handoff are
@@ -56,7 +59,9 @@ Every brief:
   owner's (`~/.agents/AGENTS.md`) when the work sits outside a repo or the
   builder does not load it on its own (Cursor does not), then the plan or the
   files named.
-- The task. Expand "the two bugs above" into the bugs.
+- The task, as the outcome that must be true and the problem behind it; name
+  a method only when the repo's rules require one. Expand "the two bugs
+  above" into the bugs.
 - The stopping point: what to finish alone and what comes back to you.
   Default: commit and open a pull request as far as the repo's own rules
   allow, and stop with the work uncommitted where they say nothing. Report
@@ -71,17 +76,35 @@ A build brief also:
   way a user would, and hands back what it ran, what it saw, and what it
   could not check. When that needs the owner's screen, it asks the owner in
   its own pane and waits for the go.
+- Its reviewer, by name: when its check passes, the builder asks its reviewer
+  to review its diff (`herdr agent prompt REVIEWER "..." --wait`) and fixes
+  the findings that hold up before opening the pull request. Once it's open,
+  the builder answers the pull request's review comments the same way.
 - When the plan is non-trivial, ask for a verdict on the plan first, then
   implementation or a stop.
 
 ## 3. Launch
+
+Layout: you on the left of your tab with your reviewer on the right; builders
+in a separate tab, each with its own reviewer split down under it, every pane
+labelled.
+
+Reviewers: one per big task, so none is asked two things at once and each
+remembers what it already reviewed. Yours reviews your plans before you brief
+builders, and anything else you want a second look at, until the plan is
+approved. A builder's reviewer starts with the builder and stays until its
+pull request merges. Codex with the newest Astra model at high effort,
+read-only. Each writes its reports to files and replies with a summary, so
+closing its pane loses nothing.
 
 Reuse the builder you started for this handoff: `herdr agent prompt` alone.
 Another session's idle agent in the same directory is not your builder. Start
 a fresh one only when you have none:
 
 ```sh
-herdr pane split --current --direction right --cwd "$REPO" --no-focus   # .result.pane.pane_id
+herdr pane split --current --direction right --cwd "$REPO" --no-focus   # your reviewer; .result.pane.pane_id
+herdr tab create --cwd "$REPO" --label builders                         # builders; .result.root_pane
+herdr pane split --pane BUILDER_PANE --direction down --cwd "$REPO" --no-focus   # its reviewer
 herdr agent start NAME --kind KIND --pane PANE_ID -- ARGS
 herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
 ```
@@ -105,9 +128,9 @@ newest id that carries it, and pass that id. Codex's list is
 must not be trusted for this (`--model sol` picks `gpt-5.6-sol` over
 `gpt-6-sol`, and `sonnet` a retired model). Claude takes the alias itself.
 
-Several builders at once: one per checkout, in their own tab with one
-labelled pane each, and each told which files the others will change. Two
-panes sit side by side; a third splits down under one of them. A builder
+Several builders at once: one per checkout, all in the builders tab side by
+side, each with its reviewer under it, and each told which files the others
+will change. A builder
 whose change touches files another is changing does not wait for that merge:
 it builds on the other's branch and rebases whenever that branch moves.
 
@@ -138,6 +161,10 @@ visible`, then `herdr agent wait NAME`. If the report is cut off, ask the
 builder to write it to a file and read that.
 
 ## 5. Judge the result
+
+Each change gets three looks: yours, the reviewer's, and the pull request's AI
+review. Read the reviewer's report and the pull request's comments, not only
+the builder's summary.
 
 The builder's "done" is evidence, not the result. Run the named check yourself
 and read its output, not only its exit code: it must run to the end and report
