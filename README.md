@@ -60,6 +60,9 @@ for you.
 - **The builder proves its own work.** It runs the check and tries the change
   the way a user would, then hands back what it ran and what it saw. When no
   check covers the change, building one is part of the task.
+- **Every change gets three looks.** Each builder has its own reviewer (Codex
+  with Astra, read-only) before it opens a pull request, you judge its proof,
+  and the pull request's AI review catches what's left.
 - **The builder's "done" is evidence, not the result.** You run the check
   yourself and read the diff against the brief before anything ships.
 - **Mistakes get fixed where they stick.** When a builder gets something wrong
