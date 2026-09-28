@@ -12,7 +12,7 @@ description: >
 You plan and judge the result. The other agent does the work: building, or
 reviewing something you hand it. Herdr runs the pane; read `herdr --skill` for
 its mechanics and restate none of them here. Requires `HERDR_ENV=1`. One
-builder per repo at a time, and do not edit alongside it.
+builder per checkout (a worktree counts as one), and do not edit alongside it.
 
 ## 0. Not a subagent
 
@@ -35,11 +35,10 @@ before the work starts, so they can redirect.
 Settle from the owner's request: the repo, the task (a plan file, a step of
 one, an inline task, or a follow-up such as "go"), the builder, any model or
 effort override, and the check, meaning the command the builder can run to
-test its own work. When no check covers this change, that is the owner's call
-and not yours: ask before launching whether building one is part of the task,
-whether you check it yourself, or whether it ships unverified. Run
-`git -C "$REPO" status` and note the branch and existing changes, so they are
-not blamed on the builder. If it is not a repo, say so and carry on.
+test its own work. When no check covers this change, building one is part of
+the task: tell the owner in one line, and ship it unverified only if they say
+so. Run `git -C "$REPO" status` and note the branch and existing changes, so
+they are not blamed on the builder. If it is not a repo, say so and carry on.
 
 ## 2. The brief
 
@@ -52,23 +51,26 @@ Every brief:
   instead: read and report findings, change nothing; every finding names the
   concrete failure it causes, and pedantry, premature optimization, and
   over-engineering are not findings.
-- What to read first, by path: the repo's instruction files, the owner's
-  (`~/.agents/AGENTS.md`) when the work sits outside a repo, then the plan or
-  the files named.
+- What to read first, by absolute path (a builder in another worktree cannot
+  see this checkout's ignored files): the repo's instruction files, the
+  owner's (`~/.agents/AGENTS.md`) when the work sits outside a repo or the
+  builder does not load it on its own (Cursor does not), then the plan or the
+  files named.
 - The task. Expand "the two bugs above" into the bugs.
 - The stopping point: what to finish alone and what comes back to you.
-  Default: stop with the work uncommitted and report what changed, what was
-  verified with its numbers, and what is unfinished.
+  Default: commit and open a pull request as far as the repo's own rules
+  allow, and stop with the work uncommitted where they say nothing. Report
+  what changed, the proof with its numbers, and what is unfinished.
 
 A build brief also:
 
-- Values by reference: the repo's own rules govern style, branches, and what
-  done means. Restate only what the task turns on.
-- Simplicity: the simplest complete change. No dependency, abstraction,
-  setting, or flag the task does not need. Untangle what the task already
-  touches when the chance is genuine, and nothing else.
-- The check that proves it, named. Verify the behaviour a user would see, not
-  that the code exists; say plainly what you could not verify.
+- Values by reference: the repo's own rules govern style, simplicity,
+  branches, and what done means. Restate only what the task turns on.
+- The check that proves it, named.
+- The builder proves its own work: it runs the check, tries the change the
+  way a user would, and hands back what it ran, what it saw, and what it
+  could not check. When that needs the owner's screen, it asks the owner in
+  its own pane and waits for the go.
 - When the plan is non-trivial, ask for a verdict on the plan first, then
   implementation or a stop.
 
@@ -92,7 +94,9 @@ herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
 | `cursor` | cursor | configured default; override with `--model MODEL` |
 | `omp` | omp | `--model PROVIDER/ID --thinking high`, with the provider as `omp models` groups it: `anthropic/claude-opus-5-5`, `openai-codex/gpt-6-sol`; a bare GPT id picks the keyless `openai` provider and fails |
 
-Effort is `high` unless the owner names another level.
+When the owner names no builder for a coding task, use `omp` with
+`anthropic/claude-opus-5-5`. Effort is `high` unless the owner names another
+level.
 
 Model names by nickname ("sol", "astra", "opus", "fable"): resolve to the
 newest id that carries it, and pass that id. Codex's list is
@@ -101,29 +105,52 @@ newest id that carries it, and pass that id. Codex's list is
 must not be trusted for this (`--model sol` picks `gpt-5.6-sol` over
 `gpt-6-sol`, and `sonnet` a retired model). Claude takes the alias itself.
 
+Several builders at once: one per checkout, in their own tab with one
+labelled pane each, and each told which files the others will change. Two
+panes sit side by side; a third splits down under one of them. A builder
+whose change touches files another is changing does not wait for that merge:
+it builds on the other's branch and rebases whenever that branch moves.
+
 Any other Herdr kind works with its own arguments. A follow-up like "go" goes
-to your builder; without one, there is nothing to continue. Run the long wait,
-and any approval Herdr's socket needs, your own harness's way.
+to your builder; without one, there is nothing to continue. Handle any
+approval Herdr's socket needs your own harness's way.
 
 ## 4. Wait
+
+Every message you send a builder, follow-ups included, gets its own wait, and
+so does a builder that stopped to ask the owner, who may answer in its pane.
+When a builder stops to ask for a live run, tell the owner at once which pane
+is asking, so they can step away from the machine and give the go there.
+Run the wait so its end reaches you without polling: in Claude Code, a
+background command that exits when the builder stops working. A builder
+waiting on the owner is already idle, so that wait first waits for it to
+start working, then for it to stop.
 
 Settled means the builder answered this brief, not that its state changed: a
 fresh agent can open with a trust or approval dialog that swallows the brief
 while Herdr still reports `idle`. Read the report with `herdr agent read
-NAME`; if the pane holds a dialog or an untouched prompt, tell the owner the
-pane and the question, and stop. Dialogs are theirs. Send the brief once after
-they clear it: "never re-send" guards a turn that ran, not a prompt that never
-landed. On anything else, or a timeout, inspect with `herdr agent get NAME`
-and `herdr agent read NAME --source visible`, then `herdr agent wait NAME`. If
-the report is cut off, ask the builder to write it to a file and read that.
+NAME`; if it ends mid-task, wait again. If the pane holds a dialog or an
+untouched prompt, tell the owner the pane and the question, and stop. Dialogs
+are theirs. Send the brief once after they clear it: "never re-send" guards a
+turn that ran, not a prompt that never landed. On anything else, or a timeout,
+inspect with `herdr agent get NAME` and `herdr agent read NAME --source
+visible`, then `herdr agent wait NAME`. If the report is cut off, ask the
+builder to write it to a file and read that.
 
 ## 5. Judge the result
 
-The builder's "done" is evidence, not the result. Run the named check
-yourself. Read the diff against the brief at the depth the change deserves.
-Tell the owner: holds up, worth changing, unverified. Send fixes back to the
-same builder. When it came back wrong in a way the named check would not have
-caught, the fix is the check, not only the code.
+The builder's "done" is evidence, not the result. Run the named check yourself
+and read its output, not only its exit code: it must run to the end and report
+no failure. Judge the builder's proof of what a user would see; any gap in it
+is unverified, not done. Read the diff against the brief at the depth the
+change deserves, and for what the next agent will copy: a workaround, a second
+way to do what the repo already does one way, or a comment excusing a
+shortcut is worth changing even when the check passes. Tell the owner: holds
+up, worth changing, unverified.
+
+Send fixes back to the same builder. When it got something wrong that could
+happen again, make the fix stick: in the code so it can't recur, else a lint
+rule or check, else a line in the repo's instructions.
 
 Findings from a review handoff are input, not authority: check each against
 the code. Reject pedantry, premature optimization, and over-engineering; a
@@ -131,6 +158,7 @@ finding must name a concrete failure this code can produce.
 
 ## 6. Ship
 
-Unless the owner already authorized shipping in the brief, nothing is
-committed, pushed, or opened as a pull request until the owner says go. Then
-relay it to the builder, by the repo's own commit rules.
+Unless the owner already authorized shipping, in the brief or through the
+repo's own rules, nothing is committed, pushed, or opened as a pull request
+until the owner says go. Then relay it to the builder, by the repo's own
+commit rules.
