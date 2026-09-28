@@ -74,7 +74,7 @@ A build brief also:
   way a user would, and hands back what it ran, what it saw, and what it
   could not check. When that needs the owner's screen, it asks the owner in
   its own pane and waits for the go.
-- The reviewer, by name: when its check passes, the builder asks the reviewer
+- Its reviewer, by name: when its check passes, the builder asks its reviewer
   to review its diff (`herdr agent prompt REVIEWER "..." --wait`) and fixes
   the findings that hold up before opening the pull request. Once it's open,
   the builder answers the pull request's review comments the same way.
@@ -83,22 +83,26 @@ A build brief also:
 
 ## 3. Launch
 
-Layout: you on the left of your tab, the reviewer on the right, and builders
-in a separate tab, one labelled pane each.
+Layout: you on the left of your tab with your reviewer on the right; builders
+in a separate tab, each with its own reviewer split down under it, every pane
+labelled.
 
-The reviewer: one per session, started once and reused. Codex with the newest
-Astra model at high effort, read-only. Builders send it their diffs; you send
-it big plans before you brief them, and anything else you want a second look
-at. It writes each report to a file and replies with a summary, so closing its
-pane loses nothing.
+Reviewers: one per big task, so none is asked two things at once and each
+remembers what it already reviewed. Yours reviews your plans before you brief
+builders, and anything else you want a second look at, until the plan is
+approved. A builder's reviewer starts with the builder and stays until its
+pull request merges. Codex with the newest Astra model at high effort,
+read-only. Each writes its reports to files and replies with a summary, so
+closing its pane loses nothing.
 
 Reuse the builder you started for this handoff: `herdr agent prompt` alone.
 Another session's idle agent in the same directory is not your builder. Start
 a fresh one only when you have none:
 
 ```sh
-herdr pane split --current --direction right --cwd "$REPO" --no-focus   # the reviewer; .result.pane.pane_id
+herdr pane split --current --direction right --cwd "$REPO" --no-focus   # your reviewer; .result.pane.pane_id
 herdr tab create --cwd "$REPO" --label builders                         # builders; .result.root_pane
+herdr pane split --pane BUILDER_PANE --direction down --cwd "$REPO" --no-focus   # its reviewer
 herdr agent start NAME --kind KIND --pane PANE_ID -- ARGS
 herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
 ```
@@ -122,9 +126,9 @@ newest id that carries it, and pass that id. Codex's list is
 must not be trusted for this (`--model sol` picks `gpt-5.6-sol` over
 `gpt-6-sol`, and `sonnet` a retired model). Claude takes the alias itself.
 
-Several builders at once: one per checkout, all in the builders tab, each told
-which files the others will change. Two panes sit side by side; a third
-splits down under one of them. A builder
+Several builders at once: one per checkout, all in the builders tab side by
+side, each with its reviewer under it, and each told which files the others
+will change. A builder
 whose change touches files another is changing does not wait for that merge:
 it builds on the other's branch and rebases whenever that branch moves.
 
