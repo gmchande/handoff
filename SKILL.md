@@ -82,6 +82,8 @@ A build brief also:
 
 ## 3. Launch
 
+Match this conversation to the live pane list by title and cwd before changing the layout. Inherited `HERDR_*` can be stale; use the verified pane and tab IDs explicitly.
+
 Layout: you on the left of your tab with your reviewer on the right; builders
 side by side in a separate tab, each with its own reviewer split down under
 it, every pane labelled. Each builder gets its own checkout and is told which
@@ -101,8 +103,8 @@ Another session's idle agent in the same directory is not your builder. Start
 a fresh one only when you have none:
 
 ```sh
-herdr pane split --current --direction right --cwd "$REPO" --no-focus   # your reviewer; .result.pane.pane_id
-herdr tab create --cwd "$REPO" --label builders                         # builders; .result.root_pane
+herdr pane split --pane LEAD_PANE --direction right --cwd "$REPO" --no-focus   # your reviewer; .result.pane.pane_id
+herdr tab create --workspace LEAD_WORKSPACE --cwd "$REPO" --label builders   # verified workspace; .result.root_pane
 herdr pane split --pane BUILDER_PANE --direction down --cwd "$REPO" --no-focus   # its reviewer
 herdr agent start NAME --kind KIND --pane PANE_ID -- ARGS
 herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
