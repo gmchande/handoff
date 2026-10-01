@@ -57,9 +57,10 @@ for you.
   dialog that swallows the brief while the runtime still reports it idle. The
   skill tells you to read the report, not the state, and hands dialogs back to
   you rather than answering them.
-- **The builder proves its own work.** It runs the check and tries the change
-  the way a user would, then hands back what it ran and what it saw. When no
-  check covers the change, building one is part of the task.
+- **The builder gives irrefutable proof it works end to end.** It runs the
+  check and tries the change the way a user would, then hands back what it ran
+  and saw as real output and screenshots. When no check covers the change,
+  building one is part of the task.
 - **Every change gets three looks.** Each builder has its own reviewer (Codex
   with Astra, read-only) before it opens a pull request, you judge its proof,
   and the pull request's AI review catches what's left.

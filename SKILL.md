@@ -68,10 +68,11 @@ A build brief also:
 - Values by reference: the repo's own rules govern style, simplicity,
   branches, and what done means. Restate only what the task turns on.
 - The check that proves it, named.
-- The builder proves its own work: it runs the check, tries the change the
-  way a user would, and hands back what it ran, what it saw, and what it
-  could not check. When that needs the owner's screen, it asks the owner in
-  its own pane and waits for the go.
+- Ask for "irrefutable proof this works end to end": the builder runs the
+  check, tries the change the way a user would, and hands back what it ran
+  and saw as real output and screenshots, and what it could not check. When
+  that needs the owner's screen, it asks the owner in its own pane and waits
+  for the go.
 - Its reviewer, by name: when its check passes, the builder asks its reviewer
   to review its diff (`herdr agent prompt REVIEWER "..." --wait`) and fixes
   the findings that hold up before opening the pull request. Once it's open,
