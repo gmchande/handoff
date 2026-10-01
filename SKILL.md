@@ -165,6 +165,9 @@ latest messages in that builder's session. `herdr agent get NAME` gives the
 session file as `.agent_session.value`. Let the builder carry out what the
 owner told it, and never restart an agent the owner closed.
 
+When a builder's pull request merges, close its pane and its reviewer's, found
+by agent name, and remove its worktree.
+
 ## 5. Judge the result
 
 Each change gets three looks: yours, the reviewer's, and the pull request's AI
