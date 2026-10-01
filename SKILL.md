@@ -158,6 +158,13 @@ inspect with `herdr agent get NAME` and `herdr agent read NAME --source
 visible`, then `herdr agent wait NAME`. If the report is cut off, ask the
 builder to write it to a file and read that.
 
+The owner steers panes directly: they answer builders, change their
+instructions, and close or stop agents. So when a builder or reviewer changes
+unexpectedly (gone, aborted, a pane you didn't make), first read the owner's
+latest messages in that builder's session. `herdr agent get NAME` gives the
+session file as `.agent_session.value`. Let the builder carry out what the
+owner told it, and never restart an agent the owner closed.
+
 ## 5. Judge the result
 
 Each change gets three looks: yours, the reviewer's, and the pull request's AI
