@@ -57,11 +57,11 @@ Every brief:
   a method only when the repo's rules require one. Expand "the two bugs
   above" into the bugs.
 - The stopping point: what to finish alone and what comes back to you.
-  Default: commit and open a pull request as far as the repo's own rules
-  allow, and stop with the work uncommitted where they say nothing. Report
-  what changed, the proof with its numbers, and what is unfinished. If the
-  owner's go comes later, relay it to the builder instead of committing
-  yourself.
+  Default: commit, then push or open a pull request as the owner's and the
+  repo's rules say; where they say nothing, stop with the work uncommitted.
+  Report what changed, the proof with its numbers, and what is unfinished.
+  If the owner's go comes later, relay it to the builder instead of
+  committing yourself.
 
 A build brief also:
 
@@ -75,14 +75,16 @@ A build brief also:
   for the go.
 - Its reviewer, by name: when its check passes, the builder asks its reviewer
   to review its diff (`herdr agent prompt REVIEWER "..." --wait`) and fixes
-  the findings that hold up before opening the pull request. Once it's open,
-  the builder answers the pull request's review comments the same way.
+  the findings that hold up before it pushes. When it opens a pull request,
+  it answers the pull request's review comments the same way.
 - When the plan is non-trivial, ask for a verdict on the plan first, then
   implementation or a stop.
 
 ## 3. Launch
 
-Match this conversation to the live pane list by title and cwd before changing the layout. Inherited `HERDR_*` can be stale; use the verified pane and tab IDs explicitly.
+Match this conversation to the live pane list by title and cwd before
+changing the layout. Inherited `HERDR_*` can be stale; use the verified pane
+and tab IDs explicitly.
 
 Layout: you on the left of your tab with your reviewer on the right; builders
 side by side in a separate tab, each with its own reviewer split down under
@@ -94,7 +96,7 @@ Reviewers: one per big task, so none is asked two things at once and each
 remembers what it already reviewed. Yours reviews your plans before you brief
 builders, and anything else you want a second look at, until the plan is
 approved. A builder's reviewer starts with the builder and stays until its
-pull request merges. Codex with the newest Sol model at `xhigh` effort,
+work merges. Codex with the newest Sol model at `xhigh` effort,
 read-only. Each writes its reports to files and replies with a summary, so
 closing its pane loses nothing.
 
@@ -165,7 +167,7 @@ latest messages in that builder's session. `herdr agent get NAME` gives the
 session file as `.agent_session.value`. Let the builder carry out what the
 owner told it, and never restart an agent the owner closed.
 
-When a builder's pull request merges, close its pane and its reviewer's, each
+When a builder's work merges, close its pane and its reviewer's, each
 looked up by agent name right then (`herdr agent get NAME`), since a stale
 pane ID once closed the builder next to it too. Then check with
 `herdr agent list` that the others in its tab are still there, and remove its
@@ -173,9 +175,9 @@ worktree.
 
 ## 5. Judge the result
 
-Each change gets three looks: yours, the reviewer's, and the pull request's AI
-review. Read the reviewer's report and the pull request's comments, not only
-the builder's summary.
+Each change gets two looks, yours and the reviewer's, and a third from the AI
+review when it has a pull request. Read the reviewer's report and any pull
+request comments, not only the builder's summary.
 
 The builder's "done" is evidence, not the result. Run the named check yourself
 and read its output, not only its exit code: it must run to the end and report

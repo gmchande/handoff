@@ -5,7 +5,7 @@ pane beside you, where you can watch it. `handoff` is the Agent Skill that
 carries the task across: it writes the brief, launches the builder in a
 [Herdr](https://herdr.dev) pane, waits properly, and judges what comes back.
 
-It is one file of about 180 lines. Herdr already knows how to split a
+It is one file of about 200 lines. Herdr already knows how to split a
 pane, start a known agent, submit a prompt, and say when that agent has
 settled, so the skill carries none of the run directories, lifecycle hooks,
 completion markers, or per-terminal launch code that delegation skills needed
@@ -61,16 +61,16 @@ for you.
   check and tries the change the way a user would, then hands back what it ran
   and saw as real output and screenshots. When no check covers the change,
   building one is part of the task.
-- **Every change gets three looks.** Each builder has its own reviewer (Codex
-  with Sol, read-only) before it opens a pull request, you judge its proof,
-  and the pull request's AI review catches what's left.
+- **Every change gets two looks, and a third on a pull request.** Each
+  builder has its own reviewer (Codex with Sol, read-only) before it pushes,
+  you judge its proof, and a pull request's AI review catches what's left.
 - **The builder's "done" is evidence, not the result.** You run the check
   yourself and read the diff against the brief before anything ships.
 - **Mistakes get fixed where they stick.** When a builder gets something wrong
   that could happen again, the fix goes into the code, a check, or the repo's
   instructions, so the next builder can't repeat it.
-- **Nothing ships unasked.** No commit, push, or pull request until you say so,
-  or the repo's own rules do.
+- **Nothing ships unasked.** No commit, push, or pull request until you or
+  your rules say so.
 
 ## License
 
