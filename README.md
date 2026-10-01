@@ -62,7 +62,7 @@ for you.
   and saw as real output and screenshots. When no check covers the change,
   building one is part of the task.
 - **Every change gets three looks.** Each builder has its own reviewer (Codex
-  with Astra, read-only) before it opens a pull request, you judge its proof,
+  with Sol, read-only) before it opens a pull request, you judge its proof,
   and the pull request's AI review catches what's left.
 - **The builder's "done" is evidence, not the result.** You run the check
   yourself and read the diff against the brief before anything ships.

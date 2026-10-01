@@ -92,7 +92,7 @@ Reviewers: one per big task, so none is asked two things at once and each
 remembers what it already reviewed. Yours reviews your plans before you brief
 builders, and anything else you want a second look at, until the plan is
 approved. A builder's reviewer starts with the builder and stays until its
-pull request merges. Codex with the newest Astra model at high effort,
+pull request merges. Codex with the newest Sol model at `xhigh` effort,
 read-only. Each writes its reports to files and replies with a summary, so
 closing its pane loses nothing.
 
@@ -112,13 +112,13 @@ herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
 | --- | --- | --- |
 | `opus` | claude | `--model opus --effort high` |
 | `claude` | claude | configured defaults, which are not `opus` |
-| `codex` | codex | `-m MODEL -c model_reasoning_effort=high` |
+| `codex` | codex | `-m MODEL -c model_reasoning_effort=xhigh` |
 | `cursor` | cursor | configured default; override with `--model MODEL` |
-| `omp` | omp | `--model PROVIDER/ID --thinking high`, with the provider as `omp models` groups it: `anthropic/claude-opus-5-5`, `openai-codex/gpt-6-astra`; a bare GPT id picks the keyless `openai` provider and fails |
+| `omp` | omp | `--model PROVIDER/ID --thinking high`, with the provider as `omp models` groups it: `anthropic/claude-opus-5-5`, `openai-codex/GPT_ID`; a bare GPT id picks the keyless `openai` provider and fails |
 
 When the owner names no builder for a coding task, use `omp` with
-`anthropic/claude-opus-5-5`. Effort is `high` unless the owner names another
-level.
+`anthropic/claude-opus-5-5`. Effort is `high` for Claude and `xhigh` for
+Codex models, unless the owner names another level.
 
 Model names by nickname ("sol", "astra", "opus", "fable"): resolve to the
 newest id that carries it, and pass that id. Codex's list is
@@ -126,7 +126,8 @@ newest id that carries it, and pass that id. Codex's list is
 `~/.codex/config.toml`; omp's list is `omp models`, and its own fuzzy match
 must not be trusted for this (`--model sol` picks `gpt-5.6-sol` over
 `gpt-6-sol`, and `sonnet` a retired model). Claude takes the alias itself.
-The owner finds Sol subpar: don't pick it, even to save money.
+Sol before 6.1 is subpar: never pass an older Sol id. omp's list can lag
+Codex's; when it lacks the model, use the `codex` kind.
 
 Any other Herdr kind works with its own arguments. A follow-up like "go" goes
 to your builder; without one, there is nothing to continue. Handle any
