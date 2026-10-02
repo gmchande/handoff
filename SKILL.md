@@ -185,8 +185,10 @@ no failure. Judge the builder's proof of what a user would see; any gap in it
 is unverified, not done. Read the diff against the brief at the depth the
 change deserves, and for what the next agent will copy: a workaround, a second
 way to do what the repo already does one way, or a comment excusing a
-shortcut is worth changing even when the check passes. Tell the owner: holds
-up, worth changing, unverified.
+shortcut is worth changing even when the check passes. Judge simplicity by
+what each piece owns and no longer has to know, never by line or file counts,
+and never make a size a brief's done-criterion. Tell the owner: holds up,
+worth changing, unverified.
 
 Send fixes back to the same builder. When it got something wrong that could
 happen again, make the fix stick: in the code so it can't recur, else a lint
