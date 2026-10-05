@@ -10,9 +10,12 @@ description: >
 # Handoff
 
 You plan and judge the result. The other agent does the work: building, or
-reviewing something you hand it. Herdr runs the pane; read `herdr --skill` for
-its mechanics and restate none of them here. Requires `HERDR_ENV=1`. One
-builder per checkout (a worktree counts as one), and do not edit alongside it.
+reviewing something you hand it. Keep your own context for that: give granular
+work, such as a probe, a code search, a render, a check run, or a live run, to
+a subagent or a handoff (section 0), and keep what it concludes. Herdr runs the
+pane; read `herdr --skill` for its mechanics and restate none of them here.
+Requires `HERDR_ENV=1`. One builder per checkout (a worktree counts as one),
+and do not edit alongside it.
 
 Decide what your own judgment covers and say what you decided. Bring the owner
 only what you can't settle, with your recommendation.
@@ -179,16 +182,16 @@ Each change gets two looks, yours and the reviewer's, and a third from the AI
 review when it has a pull request. Read the reviewer's report and any pull
 request comments, not only the builder's summary.
 
-The builder's "done" is evidence, not the result. Run the named check yourself
-and read its output, not only its exit code: it must run to the end and report
-no failure. Judge the builder's proof of what a user would see; any gap in it
-is unverified, not done. Read the diff against the brief at the depth the
-change deserves, and for what the next agent will copy: a workaround, a second
-way to do what the repo already does one way, or a comment excusing a
-shortcut is worth changing even when the check passes. Judge simplicity by
-what each piece owns and no longer has to know, never by line or file counts,
-and never make a size a brief's done-criterion. Tell the owner: holds up,
-worth changing, unverified.
+The builder's "done" is evidence, not the result. Have your own subagent run
+the named check and report its output, not only its exit code: it must run to
+the end and report no failure. Judge the builder's proof of what a user would
+see; any gap in it is unverified, not done. Read the diff against the brief at
+the depth the change deserves, and for what the next agent will copy: a
+workaround, a second way to do what the repo already does one way, or a comment
+excusing a shortcut is worth changing even when the check passes. Judge
+simplicity by what each piece owns and no longer has to know, never by line or
+file counts, and never make a size a brief's done-criterion. Tell the owner:
+holds up, worth changing, unverified.
 
 Send fixes back to the same builder. When it got something wrong that could
 happen again, make the fix stick: in the code so it can't recur, else a lint
