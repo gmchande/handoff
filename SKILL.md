@@ -100,7 +100,9 @@ work merges. Codex with the newest Sol model at `xhigh` effort,
 read-only. Each writes its reports to files and replies with a summary, so
 closing its pane loses nothing.
 
-Reuse the builder you started for this handoff: `herdr agent prompt` alone.
+A new piece of work gets a fresh builder and its own reviewer. Its follow-ups
+(fixes, review findings, rebases) go to the builder that did it, with
+`herdr agent prompt` alone.
 Another session's idle agent in the same directory is not your builder. Start
 a fresh one only when you have none:
 
