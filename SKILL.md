@@ -104,7 +104,8 @@ A new piece of work gets a fresh builder and its own reviewer. Its follow-ups
 (fixes, review findings, rebases) go to the builder that did it, with
 `herdr agent prompt` alone.
 Another session's idle agent in the same directory is not your builder. Start
-a fresh one only when you have none:
+a fresh one only when you have none, after upgrading its CLI with
+`MISE_MINIMUM_RELEASE_AGE=0 mise upgrade TOOL`, named as in `mise ls`:
 
 ```sh
 herdr pane split --pane LEAD_PANE --direction right --cwd "$REPO" --no-focus   # your reviewer; .result.pane.pane_id
