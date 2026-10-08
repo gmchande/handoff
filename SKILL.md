@@ -77,8 +77,12 @@ A build brief also:
   to review its diff (`herdr agent prompt REVIEWER "..." --wait`) and fixes
   the findings that hold up before it pushes. When it opens a pull request,
   it answers the pull request's review comments the same way.
-- When the plan is non-trivial, ask for a verdict on the plan first, then
-  implementation or a stop.
+- Invite the builder to question the brief: where it doubts an assumption or
+  an instruction, or sees a better path, it stops and says so before
+  building that part, rather than complying or working around it quietly (a
+  test quietly bent to pass once hid a real regression). When the plan is
+  non-trivial, ask for its plan and that verdict first, then implementation
+  or a stop.
 
 ## 3. Launch
 
