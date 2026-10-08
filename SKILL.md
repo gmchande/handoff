@@ -172,7 +172,10 @@ instructions, and close or stop agents. So when a builder or reviewer changes
 unexpectedly (gone, aborted, a pane you didn't make), first read the owner's
 latest messages in that builder's session. `herdr agent get NAME` gives the
 session file as `.agent_session.value`. Let the builder carry out what the
-owner told it, and never restart an agent the owner closed.
+owner told it, and never restart an agent the owner closed. The owner also
+restarts agents to upgrade them: the same pane soon hosts the resumed agent,
+unnamed and in a new session, so check the pane (`herdr pane list`) before
+reporting a builder stopped, and give it back its name (`herdr agent rename`).
 
 When a builder's work merges, close its pane and its reviewer's, each
 looked up by agent name right then (`herdr agent get NAME`), since a stale
