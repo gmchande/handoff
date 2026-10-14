@@ -90,13 +90,14 @@ A build brief also:
 
 Match this conversation to the live pane list by title and cwd before
 changing the layout. Inherited `HERDR_*` can be stale; use the verified pane
-and tab IDs explicitly.
+and workspace IDs explicitly.
 
-Layout: you on the left of your tab with your reviewer on the right; builders
-side by side in a separate tab, each with its own reviewer split down under
-it, every pane labelled. Each builder gets its own checkout and is told which
-files the others will change; one whose change touches another's files builds
-on that branch and rebases whenever it moves.
+Layout: you on the left of your tab with your reviewer on the right. Each
+builder gets a tab of its own in your workspace, labelled with its name: the
+builder on the left, its reviewer on the right. Label each pane you make with
+its agent's name. Each builder gets its own checkout and is told which files
+the others will change; one whose change touches another's files builds on
+that branch and rebases whenever it moves.
 
 Reviewers: one per big task, so none is asked two things at once and each
 remembers what it already reviewed. Yours reviews your plans before you brief
@@ -115,8 +116,9 @@ a fresh one only when you have none, after upgrading its CLI with
 
 ```sh
 herdr pane split --pane LEAD_PANE --direction right --cwd "$REPO" --no-focus   # your reviewer; .result.pane.pane_id
-herdr tab create --workspace LEAD_WORKSPACE --cwd "$REPO" --label builders   # verified workspace; .result.root_pane
-herdr pane split --pane BUILDER_PANE --direction down --cwd "$REPO" --no-focus   # its reviewer
+herdr tab create --workspace LEAD_WORKSPACE --cwd "$CHECKOUT" --label NAME --no-focus   # the builder's checkout and name; .result.root_pane.pane_id
+herdr pane split --pane BUILDER_PANE --direction right --cwd "$CHECKOUT" --no-focus   # its reviewer
+herdr pane rename PANE_ID NAME
 herdr agent start NAME --kind KIND --pane PANE_ID -- ARGS
 herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
 ```
@@ -179,11 +181,16 @@ restarts agents to upgrade them: the same pane soon hosts the resumed agent,
 unnamed and in a new session, so check the pane (`herdr pane list`) before
 reporting a builder stopped, and give it back its name (`herdr agent rename`).
 
-When a builder's work merges, close its pane and its reviewer's, each
-looked up by agent name right then (`herdr agent get NAME`), since a stale
-pane ID once closed the builder next to it too. Then check with
-`herdr agent list` that the others in its tab are still there, and remove its
-worktree.
+When a builder's work merges:
+
+- Find its tab by the builder's name right then (`herdr agent get NAME`
+  gives `.result.agent.tab_id`): a stale pane ID once closed the builder
+  next to it.
+- Close the tab (`herdr tab close`, which ends its agents) once
+  `herdr pane list` shows only the builder and its reviewer in it;
+  otherwise close just their two panes, each found by name.
+- Check with `herdr agent list` that every other agent is still there.
+- Remove its worktree.
 
 ## 5. Judge the result
 

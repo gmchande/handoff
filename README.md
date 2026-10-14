@@ -1,9 +1,9 @@
 # handoff
 
-You plan and review with one coding agent. Another agent does the work, in a
-pane beside you, where you can watch it. `handoff` is the Agent Skill that
+You plan and review with one coding agent. Another agent does the work in a
+tab of its own, where you can watch it. `handoff` is the Agent Skill that
 carries the task across: it writes the brief, launches the builder in a
-[Herdr](https://herdr.dev) pane, waits properly, and judges what comes back.
+[Herdr](https://herdr.dev) tab, waits properly, and judges what comes back.
 
 It is one file of about 200 lines. Herdr already knows how to split a
 pane, start a known agent, submit a prompt, and say when that agent has
