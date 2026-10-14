@@ -13,6 +13,10 @@ You plan and judge the result. The other agent does the work: building, or
 reviewing something you hand it. Herdr runs the pane; read `herdr --skill` for
 its mechanics and restate none of them here. Requires `HERDR_ENV=1`. One
 builder per checkout (a worktree counts as one), and do not edit alongside it.
+Watch memory as builders add up: every agent holds 250 MB to 1 GB even
+idle, and on 14 October forty-five of them pushed the owner's desktop into
+swap. About three at once is comfortable on this machine; run more when the
+work calls for it.
 
 Decide what your own judgment covers and say what you decided. Bring the owner
 only what you can't settle, with your recommendation.
