@@ -62,6 +62,8 @@ Every brief:
   Report what changed, the proof with its numbers, and what is unfinished.
   If the owner's go comes later, relay it to the builder instead of
   committing yourself.
+- How it reports: by ending its turn, which your wait picks up. It never
+  prompts your pane: the owner types there, and its text lands as theirs.
 
 A build brief also:
 
