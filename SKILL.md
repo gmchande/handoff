@@ -181,17 +181,6 @@ restarts agents to upgrade them: the same pane soon hosts the resumed agent,
 unnamed and in a new session, so check the pane (`herdr pane list`) before
 reporting a builder stopped, and give it back its name (`herdr agent rename`).
 
-When a builder's work merges:
-
-- Find its tab by the builder's name right then (`herdr agent get NAME`
-  gives `.result.agent.tab_id`): a stale pane ID once closed the builder
-  next to it.
-- Close the tab (`herdr tab close`, which ends its agents) once
-  `herdr pane list` shows only the builder and its reviewer in it;
-  otherwise close just their two panes, each found by name.
-- Check with `herdr agent list` that every other agent is still there.
-- Remove its worktree.
-
 ## 5. Judge the result
 
 Each change gets two looks, yours and the reviewer's, and a third from the AI
@@ -216,3 +205,16 @@ rule or check, else a line in the repo's instructions.
 Findings from a review handoff are input, not authority: check each against
 the code. Reject pedantry, premature optimization, and over-engineering; a
 finding must name a concrete failure this code can produce.
+
+## 6. Close out
+
+When a builder's work merges:
+
+- Find its tab by the builder's name right then (`herdr agent get NAME`
+  gives `.result.agent.tab_id`): a stale pane ID once closed the builder
+  next to it.
+- Close the tab (`herdr tab close`, which ends its agents) once
+  `herdr pane list` shows only the builder and its reviewer in it;
+  otherwise close just their two panes, each found by name.
+- Check with `herdr agent list` that every other agent is still there.
+- Remove its worktree.
