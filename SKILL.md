@@ -107,7 +107,8 @@ Reviewers: one per big task, so none is asked two things at once and each
 remembers what it already reviewed. Yours reviews your plans before you brief
 builders, and anything else you want a second look at, until the plan is
 approved. A builder's reviewer starts with the builder and stays until its
-work merges. Codex with the newest Sol model at `xhigh` effort,
+work merges, and it checks the code, not the taste. A review handoff gets no
+reviewer: it changes nothing. Codex with the newest Sol model at `xhigh` effort,
 read-only. Each writes its reports to files and replies with a summary, so
 closing its pane loses nothing.
 
