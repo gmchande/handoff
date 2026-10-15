@@ -223,3 +223,15 @@ When a builder's work merges:
   otherwise close just their two panes, each found by name.
 - Check with `herdr agent list` that every other agent is still there.
 - Remove its worktree.
+## 7. Handing over your own seat
+
+When a new session is to take over your role:
+
+- First sweep this session for loose ends: what the owner asked for that
+  isn't done, what you said you'd do and didn't, problems left without a
+  decision, and anything left running. A long session needs helpers, one
+  per day of its record. Put the decided ones in the plan and bring the
+  rest to the owner.
+- Then keep the handoff short: the job, where to start, and what to leave
+  alone. The new session reads the code and forms its own view; the plan
+  carries the details.
