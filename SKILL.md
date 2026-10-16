@@ -105,8 +105,8 @@ that branch and rebases whenever it moves.
 
 Reviewers: one per big task, so none is asked two things at once and each
 remembers what it already reviewed. Yours reviews your plans before you brief
-builders, and anything else you want a second look at, until the plan is
-approved. A builder's reviewer starts with the builder and stays until its
+builders, and anything else you want a second look at, until the owner
+approves the plan. A builder's reviewer starts with the builder and stays until its
 work merges, and it checks the code, not the taste. A review handoff gets no
 reviewer: it changes nothing. Codex with the newest Sol model at `xhigh` effort,
 read-only. Each writes its reports to files and replies with a summary, so
@@ -207,9 +207,10 @@ Send fixes back to the same builder. When it got something wrong that could
 happen again, make the fix stick: in the code so it can't recur, else a lint
 rule or check, else a line in the repo's instructions.
 
-Findings from a review handoff are input, not authority: check each against
-the code. Reject pedantry, premature optimization, and over-engineering; a
-finding must name a concrete failure this code can produce.
+Every review is input, not authority, whether of code, a plan or research:
+check each finding against the code or the requirements. Reject pedantry,
+premature optimization, and over-engineering; a finding must name a concrete
+failure the work can produce.
 
 ## 6. Close out
 
