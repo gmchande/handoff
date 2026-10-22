@@ -5,12 +5,13 @@ tab of its own, where you can watch it. `handoff` is the Agent Skill that
 carries the task across: it writes the brief, launches the builder in a
 [Herdr](https://herdr.dev) tab, waits properly, and judges what comes back.
 
-It is one file of about 200 lines. Herdr already knows how to split a
-pane, start a known agent, submit a prompt, and say when that agent has
-settled, so the skill carries none of the run directories, lifecycle hooks,
-completion markers, or per-terminal launch code that delegation skills needed
-before. What it carries instead is the part that actually decides whether the
-work comes back right: what goes in the brief, and what you check afterwards.
+It is one file of about 170 lines, and a short launch reference. Herdr
+already knows how to split a pane, start a known agent, submit a prompt, and
+say when that agent has settled, so the skill carries none of the run
+directories, lifecycle hooks, completion markers, or per-terminal launch code
+that delegation skills needed before. What it carries instead is the part
+that actually decides whether the work comes back right: what goes in the
+brief, and what you check afterwards.
 
 Any Agent Skills client can sit in either seat. Claude Code can hand a task to
 Codex; Codex can hand one to Cursor; any of them can hand a review to another.
@@ -53,19 +54,20 @@ for you.
 - **A review handoff is a different job.** The reviewer changes nothing, and
   every finding must name the concrete failure it causes. Pedantry, premature
   optimization, and over-engineering are not findings.
-- **Settled is not the same as done.** A fresh agent can open with a trust
-  dialog that swallows the brief while the runtime still reports it idle. The
-  skill tells you to read the report, not the state, and hands dialogs back to
-  you rather than answering them.
+- **A turn's end is a report, not proof it's done.** The skill tells you to
+  read what the builder says, send it back with what's still open, and hand
+  dialogs to you rather than answer them.
 - **The builder gives irrefutable proof it works end to end.** It runs the
   check and tries the change the way a user would, then hands back what it ran
   and saw as real output and screenshots. When no check covers the change,
   building one is part of the task.
-- **Every change gets two looks, and a third on a pull request.** Each
-  builder has its own reviewer (Codex with Sol, read-only) before it pushes,
-  you judge its proof, and a pull request's AI review catches what's left.
-- **The builder's "done" is evidence, not the result.** You run the check
-  yourself and read the diff against the brief before anything ships.
+- **Every change gets a reviewer from another model.** Each builder has its
+  own (Codex with Sol, changing no code) before it pushes, you judge its
+  proof, and a pull request's AI review, when it comments, catches what's
+  left.
+- **The builder's "done" is evidence, not the result.** You read its run of
+  the check, run the check yourself when what you'd merge differs from what
+  ran, and read the diff against the brief before anything ships.
 - **Mistakes get fixed where they stick.** When a builder gets something wrong
   that could happen again, the fix goes into the code, a check, or the repo's
   instructions, so the next builder can't repeat it.

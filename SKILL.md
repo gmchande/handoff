@@ -1,238 +1,169 @@
 ---
 name: handoff
 description: >
-  Hand a task, plan, or review to another coding agent in a Herdr pane, then
-  judge what comes back. Use when the owner asks to hand off, delegate, or
-  "send this to" an agent (opus, claude, codex, cursor, or any Herdr kind), or
-  invokes /handoff or $handoff. You hold the senior seat.
+  Hands a task, plan, or review to another coding agent in a Herdr pane, then
+  judges what comes back. Use when the user asks to hand off, delegate, or
+  "send this to" an agent (opus, claude, codex, cursor, omp, or any Herdr
+  kind), or invokes /handoff or $handoff. Not for passing your own seat to a
+  successor.
 ---
 
 # Handoff
 
-You plan and judge the result. The other agent does the work: building, or
-reviewing something you hand it. Herdr runs the pane; read `herdr --skill` for
-its mechanics and restate none of them here. Requires `HERDR_ENV=1`. One
-builder per checkout (a worktree counts as one), and do not edit alongside it.
-Watch memory as builders add up: every agent holds 250 MB to 1 GB even
-idle, and on 14 October forty-five of them pushed the owner's desktop into
-swap. About three at once is comfortable on this machine; run more when the
-work calls for it.
+You hold the senior seat: you write the brief, launch the agent, wait for it,
+and judge what comes back, while it builds or reviews. Herdr runs the panes.
+Before your first Herdr command, read `herdr --skill`: it covers Herdr's
+commands and states, and this skill adds what Herdr leaves to you.
 
-Decide what your own judgment covers and say what you decided. Bring the owner
+Decide what your own judgment covers, and say what you decided. Bring the user
 only what you can't settle, with your recommendation.
 
-## 0. Not a subagent
+## Handoff or subagent
 
-A subagent is invisible, answers only to you, and spends your context: right
-for mechanical work you can check afterwards, like a sweep or a search. A
-handoff is a visible pane the owner can watch, steer, and answer dialogs in;
-it persists, takes follow-ups, and spends its own CLI's budget: right for work
-that needs judgment or that the owner will want to see. When the owner's
-wording is ambiguous, say in one line which you are using.
+A subagent is invisible, answers only to you, and spends your context: use
+one for mechanical work you can check, like a search. A handoff is a pane the
+user can watch and steer; it persists, takes follow-ups, and spends its own
+budget: use it for work that needs judgment or that the user will want to
+see. When the user's wording leaves it open, say which you're using.
 
-## 1. Before launching
+## Before launching
 
-Settle from the owner's request: the repo, the task (a plan file, a step of
-one, an inline task, or a follow-up such as "go"), the builder, any model or
-effort override, and the check, meaning the command the builder can run to
-test its own work. When no check covers this change, building one is part of
-the task: tell the owner in one line, and ship it unverified only if they say
-so. Run `git -C "$REPO" status` and note the branch and existing changes, so
-they are not blamed on the builder. If it is not a repo, say so and carry on.
+Settle the repo, the task (a plan file, a step of one, an inline task, or a
+follow-up like "go" for the builder already working for you), the agent, any
+model or effort the user named, and the check: the command that proves the
+work. When no check covers the change, building one is part of the task: say
+so, and ship it unverified only if the user says to. Note `git status` first,
+so existing changes aren't blamed on the builder.
 
-## 2. The brief
+## The brief
 
-Self-contained; the builder has none of your conversation. Anything you would
-otherwise have to correct afterwards belongs here.
+The agent has none of your conversation, so the brief carries everything you
+would otherwise correct afterwards. Every brief:
 
-Every brief:
+- **The role.** A builder does this task. A reviewer changes nothing, and each
+  finding names the concrete failure it causes; pedantry, premature
+  optimization, and over-engineering aren't findings. A role's assignment
+  goes in its brief, never in an `AGENTS.md`, which every agent reads.
+- **What to read first, by absolute path,** since a builder in another
+  worktree can't see this checkout's ignored files: the repo's instruction
+  files, the user's own (`~/.agents/AGENTS.md`) when the agent doesn't load
+  them (Cursor doesn't), then the files the task names. The repo's rules
+  govern style, branches, and what done means; restate only what this task
+  turns on.
+- **The outcome that must be true, and the problem behind it,** not the
+  method, unless the repo's rules name one. For research or design, describe
+  the subject as the user sees it and keep your own favourite answer out: one
+  suggested direction steers the whole result. A design starts from what the
+  person is trying to do and where today's design fails them, asks for the
+  smallest real answer, and offers a choice only where a real one exists.
+- **How it reports:** by ending its turn, which your wait picks up, never by
+  typing into your pane, where its text would land as the user's. When it
+  needs the user, for a look, a choice, or a live run, it ends its turn saying
+  what and why.
+- **Room to object.** Where the agent doubts an assumption or sees a better
+  path, it stops and says so before building that part, rather than complying
+  or quietly working around it: a test bent to pass can hide a real
+  regression. For a non-trivial plan, ask for its plan and that verdict first.
 
-- Your role: implementer for this task. For a review handoff, reviewer
-  instead: read and report findings, change nothing; every finding names the
-  concrete failure it causes, and pedantry, premature optimization, and
-  over-engineering are not findings. Roles live in briefs, never in an
-  `AGENTS.md`, which every agent reads.
-- What to read first, by absolute path (a builder in another worktree cannot
-  see this checkout's ignored files): the repo's instruction files, the
-  owner's (`~/.agents/AGENTS.md`) when the work sits outside a repo or the
-  builder does not load it on its own (Cursor does not), then the plan or the
-  files named.
-- The task, as the outcome that must be true and the problem behind it; name
-  a method only when the repo's rules require one. Expand "the two bugs
-  above" into the bugs.
-- The stopping point: what to finish alone and what comes back to you.
-  Default: commit, then push or open a pull request as the owner's and the
-  repo's rules say; where they say nothing, stop with the work uncommitted.
-  Report what changed, the proof with its numbers, and what is unfinished.
-  If the owner's go comes later, relay it to the builder instead of
-  committing yourself.
-- How it reports: by ending its turn, which your wait picks up. It never
-  prompts your pane: the owner types there, and its text lands as theirs.
+A build brief also carries:
 
-A build brief also:
+- **The check, and irrefutable proof it works end to end:** the builder runs
+  the check, tries the change as a user would, and brings back what it ran and
+  saw (output, screenshots) and what it couldn't check. When the full check is
+  slow, it runs the parts its change touches while it works, and the whole
+  once, on its final commit.
+- **Its reviewer, by name.** When the parts of the check its change touches
+  pass, the builder asks the reviewer to review its diff (`herdr agent prompt
+  REVIEWER "..." --wait`) and fixes what holds up before it pushes; on a pull
+  request, it answers the review comments the same way.
+- **Where to stop.** By default the builder commits, then pushes or opens a
+  pull request as the user's and the repo's rules say; where both say
+  nothing, it stops with the work uncommitted. When the user's go comes later,
+  relay it to the builder rather than committing yourself.
 
-- Values by reference: the repo's own rules govern style, simplicity,
-  branches, and what done means. Restate only what the task turns on.
-- The check that proves it, named.
-- Ask for "irrefutable proof this works end to end": the builder runs the
-  check, tries the change the way a user would, and hands back what it ran
-  and saw as real output and screenshots, and what it could not check. When
-  that needs the owner's screen, it asks the owner in its own pane and waits
-  for the go.
-- Its reviewer, by name: when its check passes, the builder asks its reviewer
-  to review its diff (`herdr agent prompt REVIEWER "..." --wait`) and fixes
-  the findings that hold up before it pushes. When it opens a pull request,
-  it answers the pull request's review comments the same way.
-- Invite the builder to question the brief: where it doubts an assumption or
-  an instruction, or sees a better path, it stops and says so before
-  building that part, rather than complying or working around it quietly (a
-  test quietly bent to pass once hid a real regression). When the plan is
-  non-trivial, ask for its plan and that verdict first, then implementation
-  or a stop.
+## Launch
 
-## 3. Launch
+[launch.md](launch.md) has the commands, each agent's arguments, and model
+names.
 
-Match this conversation to the live pane list by title and cwd before
-changing the layout. Inherited `HERDR_*` can be stale; use the verified pane
-and workspace IDs explicitly.
+- Find your own pane in the live pane list, by title and cwd, before changing
+  the layout: inherited `HERDR_*` values can be stale.
+- Each builder gets its own tab, named for it: the builder on the left, its
+  reviewer on the right, each pane labelled with its agent's name. It also
+  gets its own worktree, and is told which files the others are changing.
+  Never edit alongside a builder. One whose change touches another's files
+  builds on that branch and rebases whenever it moves.
+- Every builder gets a reviewer from another model: by default Codex with the
+  newest Sol at `xhigh`, or a Claude model when the builder is Codex. The
+  reviewer changes no code, stays until the work merges, checks the code
+  rather than the taste, and writes each report to a file and replies with a
+  summary, so closing its pane loses nothing. Work that ships nothing, a
+  review or exploration the user picks from, gets none.
+- A builder's follow-ups go to it, since it starts knowing its work: fixes,
+  review findings, rebases, and new work on its own files or unmerged branch.
+  Anything else gets a fresh builder, because a long session makes every turn
+  cost more. Another session's idle agent isn't yours.
+- Keep to about three builders at once, and queue the rest unless the user
+  asks for more: more slow the machine's test runs and outrun your reviews.
 
-Layout: you on the left of your tab with your reviewer on the right. Each
-builder gets a tab of its own in your workspace, labelled with its name: the
-builder on the left, its reviewer on the right. Label each pane you make with
-its agent's name. Each builder gets its own checkout and is told which files
-the others will change; one whose change touches another's files builds on
-that branch and rebases whenever it moves.
+## Wait
 
-Reviewers: one per big task, so none is asked two things at once and each
-remembers what it already reviewed. Yours reviews your plans before you brief
-builders, and anything else you want a second look at, until the owner
-approves the plan. A builder's reviewer starts with the builder and stays until its
-work merges, and it checks the code, not the taste. A review handoff gets no
-reviewer: it changes nothing. Codex with the newest Sol model at `xhigh` effort,
-read-only. Each writes its reports to files and replies with a summary, so
-closing its pane loses nothing.
+- Give every message its own wait, run so its end reaches you without
+  polling: in Claude Code, a background command. A builder waiting on the user
+  is already idle, so wait for it to start working, then for it to stop.
+- A wait that times out proves nothing: read the pane, and wait again without
+  sending the message again.
+- A turn's end is a report, not proof the work is done: read it
+  (`herdr agent read`). If it stops with work open and no blocker named, send
+  a short message naming what's open; after two or three, bring it to the
+  user.
+- A dialog or a question in the pane is the user's: tell them which pane and
+  what it asks, and stop. Send the brief once they've cleared it.
+- When a builder needs the user, bring it to them at once and relay the
+  answer. Live runs share one desktop: one at a time.
+- Don't guess how long a builder will take: builders finish in minutes to an
+  hour what feels like days of work. When timing matters, say what's left in
+  steps.
+- The user steers panes directly. When an agent changes unexpectedly, first
+  read the user's latest messages in its session (`herdr agent get NAME`
+  gives it as `.result.agent.agent_session.value`), and let it do what they
+  said; never restart an agent they closed. One they restarted comes back in
+  the same pane, unnamed: check `herdr pane list` before reporting it
+  stopped, and give it back its name.
 
-A new piece of work gets a fresh builder and its own reviewer. Its follow-ups
-(fixes, review findings, rebases) go to the builder that did it, with
-`herdr agent prompt` alone.
-Another session's idle agent in the same directory is not your builder. Start
-a fresh one only when you have none, after upgrading its CLI with
-`MISE_MINIMUM_RELEASE_AGE=0 mise upgrade TOOL`, named as in `mise ls`:
+## Judge the result
 
-```sh
-herdr pane split --pane LEAD_PANE --direction right --cwd "$REPO" --no-focus   # your reviewer; .result.pane.pane_id
-herdr tab create --workspace LEAD_WORKSPACE --cwd "$CHECKOUT" --label NAME --no-focus   # the builder's checkout and name; .result.root_pane.pane_id
-herdr pane split --pane BUILDER_PANE --direction right --cwd "$CHECKOUT" --no-focus   # its reviewer
-herdr pane rename PANE_ID NAME
-herdr agent start NAME --kind KIND --pane PANE_ID -- ARGS
-herdr agent prompt NAME "BRIEF" --wait --timeout 1800000
-```
+- The builder's "done" is evidence, not the result. Read its run of the check:
+  to the end, on the commit you'll merge, with no failure. Run it yourself
+  only when what you merge differs from what ran (a later rebase, or changes
+  merged together), or the run can't be seen.
+- Read the reviewer's report and the pull request's comments, not just the
+  builder's summary, and never wait for an AI review. Every review is input,
+  not authority: check each finding against the code.
+- Judge the proof of what a user would see; any gap in it is unverified, not
+  done.
+- Read the diff against the brief, and for what the next agent will copy: a
+  workaround, a second way of doing what the repo does one way, or a comment
+  excusing a shortcut is worth changing even when the check passes. Judge
+  simplicity by what each piece owns and no longer has to know, never by line
+  counts.
+- Judge a design before the user sees it: send back one that only moves a
+  problem around, or replaces what already works.
+- Tell the user it holds up, it's worth changing, or it's unverified.
+- Send fixes back to the same builder. When its mistake could recur, make the
+  fix stick: in the code, else a check, else a line in the repo's
+  instructions. A fix for something that quietly broke says when and why it
+  broke, and closes the gap that let it through.
 
-| Builder | Kind | Args |
-| --- | --- | --- |
-| `opus` | claude | `--model opus --effort high` |
-| `claude` | claude | configured defaults, which are not `opus` |
-| `codex` | codex | `-m MODEL -c model_reasoning_effort=xhigh` |
-| `cursor` | cursor | configured default; override with `--model MODEL` |
-| `omp` | omp | `--model PROVIDER/ID --thinking high`, with the provider as `omp models` groups it: `anthropic/claude-opus-5-5`, `openai-codex/GPT_ID`; a bare GPT id picks the keyless `openai` provider and fails |
-
-When the owner names no builder for a coding task, use `omp` with
-`anthropic/claude-opus-5-5`. Effort is `high` for Claude and `xhigh` for
-Codex models, unless the owner names another level.
-
-Model names by nickname ("sol", "astra", "opus", "fable"): resolve to the
-newest id that carries it, and pass that id. Codex's list is
-`~/.codex/models_cache.json` and its default is `model` in
-`~/.codex/config.toml`; omp's list is `omp models`, and its own fuzzy match
-must not be trusted for this (`--model sol` picks `gpt-5.6-sol` over
-`gpt-6-sol`, and `sonnet` a retired model). Claude takes the alias itself.
-Sol before 6.1 is subpar: never pass an older Sol id. omp's list can lag
-Codex's; when it lacks the model, use the `codex` kind.
-
-Any other Herdr kind works with its own arguments. A follow-up like "go" goes
-to your builder; without one, there is nothing to continue. Handle any
-approval Herdr's socket needs your own harness's way.
-
-## 4. Wait
-
-Every message you send a builder, follow-ups included, gets its own wait, and
-so does a builder that stopped to ask the owner, who may answer in its pane.
-When a builder stops to ask for a live run, tell the owner at once which pane
-is asking, so they can step away from the machine and give the go there.
-Live runs share one desktop, so keep them one at a time.
-Run the wait so its end reaches you without polling: in Claude Code, a
-background command that exits when the builder stops working. A builder
-waiting on the owner is already idle, so that wait first waits for it to
-start working, then for it to stop.
-
-Settled means the builder answered this brief, not that its state changed: a
-fresh agent can open with a trust or approval dialog that swallows the brief
-while Herdr still reports `idle`. Read the report with `herdr agent read
-NAME`; if it ends mid-task, wait again. If the pane holds a dialog or an
-untouched prompt, tell the owner the pane and the question, and stop. Dialogs
-are theirs. Send the brief once after they clear it: "never re-send" guards a
-turn that ran, not a prompt that never landed. On anything else, or a timeout,
-inspect with `herdr agent get NAME` and `herdr agent read NAME --source
-visible`, then `herdr agent wait NAME`. If the report is cut off, ask the
-builder to write it to a file and read that.
-
-The owner steers panes directly: they answer builders, change their
-instructions, and close or stop agents. So when a builder or reviewer changes
-unexpectedly (gone, aborted, a pane you didn't make), first read the owner's
-latest messages in that builder's session. `herdr agent get NAME` gives the
-session file as `.agent_session.value`. Let the builder carry out what the
-owner told it, and never restart an agent the owner closed. The owner also
-restarts agents to upgrade them: the same pane soon hosts the resumed agent,
-unnamed and in a new session, so check the pane (`herdr pane list`) before
-reporting a builder stopped, and give it back its name (`herdr agent rename`).
-
-## 5. Judge the result
-
-Each change gets two looks, yours and the reviewer's, and a third from the AI
-review when it has a pull request. Read the reviewer's report and any pull
-request comments, not only the builder's summary.
-
-The builder's "done" is evidence, not the result. Run the named check yourself
-and read its output, not only its exit code: it must run to the end and report
-no failure. Judge the builder's proof of what a user would see; any gap in it
-is unverified, not done. Read the diff against the brief at the depth the
-change deserves, and for what the next agent will copy: a workaround, a second
-way to do what the repo already does one way, or a comment excusing a
-shortcut is worth changing even when the check passes. Judge simplicity by
-what each piece owns and no longer has to know, never by line or file counts,
-and never make a size a brief's done-criterion. Tell the owner: holds up,
-worth changing, unverified.
-
-Send fixes back to the same builder. When it got something wrong that could
-happen again, make the fix stick: in the code so it can't recur, else a lint
-rule or check, else a line in the repo's instructions.
-
-Every review is input, not authority, whether of code, a plan or research:
-check each finding against the code or the requirements. Reject pedantry,
-premature optimization, and over-engineering; a finding must name a concrete
-failure the work can produce.
-
-## 6. Close out
+## Close out
 
 When a builder's work merges:
 
-- Find its tab by the builder's name right then (`herdr agent get NAME`
-  gives `.result.agent.tab_id`): a stale pane ID once closed the builder
-  next to it.
-- Close the tab (`herdr tab close`, which ends its agents) once
-  `herdr pane list` shows only the builder and its reviewer in it;
-  otherwise close just their two panes, each found by name.
-- Check with `herdr agent list` that every other agent is still there.
-- Remove its worktree.
-## 7. Handing over your own seat
-
-When a new session is to take over your role:
-
-- First sweep this session for loose ends: what the owner asked for that
-  isn't done, what you said you'd do and didn't, problems left without a
-  decision, and anything left running. A long session needs helpers, one
-  per day of its record. Put the decided ones in the plan and bring the
-  rest to the owner.
-- Then keep the handoff short: the job, where to start, and what to leave
-  alone. The new session reads the code and forms its own view; the plan
-  carries the details.
+1. Find its tab by the builder's name at that moment (`herdr agent get NAME`
+   gives `.result.agent.tab_id`): a stale pane ID can close the agent next to
+   it.
+2. If `herdr pane list` shows only the builder and its reviewer there, close
+   the tab (`herdr tab close` ends its agents); otherwise close their two
+   panes, each found by name.
+3. Check with `herdr agent list` that every other agent is still there.
+4. Remove its worktree.
