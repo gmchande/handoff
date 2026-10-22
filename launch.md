@@ -37,4 +37,4 @@ Any other Herdr kind works with its own arguments.
   and its default is `model` in `~/.codex/config.toml`. omp lists its models
   in `omp models`; resolve the id yourself there, since omp's own fuzzy match
   can pick an older or retired model. Claude takes the alias itself. When
-  omp's list lacks a model, use the `codex` kind.
+  omp's list lacks a GPT model that Codex's list has, use the `codex` kind.

@@ -75,7 +75,9 @@ A build brief also gives:
   the check, tries the change as a user would, and brings back what it ran
   and saw (output, screenshots) and what it couldn't check. When the full
   check is slow, it runs only the parts its change touches while it works,
-  and the full check once, on its final commit.
+  and the full check once, when you tell it the work is ready to merge. A
+  rebase alone doesn't call for another run: your own run on what merges
+  covers it.
 - **Its reviewer, by name.** Once the parts of the check its change touches
   pass, the builder asks the reviewer to review its diff
   (`herdr agent prompt REVIEWER "..." --wait`), and fixes what holds up before
@@ -99,7 +101,8 @@ names.
   touches another's files builds on that branch, points its pull request at
   it, and rebases whenever it moves.
 - Every builder gets a reviewer from another model: by default Codex with the
-  newest Sol at `xhigh`, or a Claude model when the builder is Codex. The
+  newest Sol at `xhigh`, or a Claude model when the builder runs Sol, through
+  any client. The
   reviewer changes no code and stays until the work merges. It checks the
   code rather than the taste, writes each report to a file, and replies with
   a summary, so closing its pane loses nothing. Work that ships nothing, such

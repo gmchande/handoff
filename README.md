@@ -62,7 +62,7 @@ for you.
   and saw as real output and screenshots. When no check covers the change,
   building one is part of the task.
 - **Every change gets a reviewer from another model.** Each builder has its
-  own (Codex with Sol, changing no code) before it pushes, you judge its
+  own (from another model, changing no code) before it pushes, you judge its
   proof, and a pull request's AI review, when it comments, catches what's
   left.
 - **The builder's "done" is evidence, not the result.** You read its run of
