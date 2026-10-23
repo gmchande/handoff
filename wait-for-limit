@@ -13,7 +13,12 @@
 #   5  the agent is gone
 #   6  the wait would run past --max-wait (default 28800 = 8h); nothing sent
 #   7  sent, but the agent wasn't seen working within a minute; never resent
-#   8  refused: workspace w9, or another wait-for-limit already holds this agent
+#   8  refused: workspace w9, another wait-for-limit holds this agent, or this
+#      stop was already sent to
+#
+# It looks at the agent's name once, then addresses its pane id, so a name that
+# moves can't redirect it. It never lists agents. Typing in the few
+# milliseconds between its last look and the send can't be ruled out.
 #
 # Test hooks: HERDR (the herdr binary), LIMIT_WAIT_STATE (state dir),
 # LIMIT_WAIT_POLL (seconds between checks while waiting), LIMIT_WAIT_MARGIN
@@ -37,6 +42,8 @@ die() { # status message
   exit "$1"
 }
 
+hd() { timeout 60 "$HERDR" "$@"; }
+
 while [ $# -gt 0 ]; do
   case $1 in
     --max-wait) MAX_WAIT=${2:-}; shift 2 || die 2 "--max-wait needs seconds" ;;
@@ -48,16 +55,14 @@ done
 [[ $NAME =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || die 2 "AGENT must be a Herdr agent name, not '$NAME'"
 [[ $MAX_WAIT =~ ^[0-9]+$ ]] || die 2 "--max-wait needs whole seconds"
 
-# Only ever addresses the one named agent: never lists agents, so it cannot
-# read or touch another pane, including anything in workspace 9.
-
-get_agent() { # sets A_PANE A_KIND A_STATUS A_WS; false when the agent is gone
+get_agent() { # sets A_PANE A_KIND A_STATUS A_WS A_SESSION; false when the agent is gone
   local json
-  json=$($HERDR agent get "$NAME" 2>/dev/null) || return 1
+  json=$(hd agent get "$NAME" 2>/dev/null) || return 1
   A_PANE=$(jq -r '.result.agent.pane_id // empty' <<<"$json") || return 1
   A_KIND=$(jq -r '.result.agent.agent // empty' <<<"$json")
   A_STATUS=$(jq -r '.result.agent.agent_status // empty' <<<"$json")
   A_WS=$(jq -r '.result.agent.workspace_id // empty' <<<"$json")
+  A_SESSION=$(jq -r '.result.agent.agent_session | select(.kind == "path") | .value // empty' <<<"$json")
   [ -n "$A_PANE" ]
 }
 
@@ -68,88 +73,121 @@ get_agent() { # sets A_PANE A_KIND A_STATUS A_WS; false when the agent is gone
 #   Codex        You've hit your usage limit. … or try again at 6:26 PM.
 #                … try again at Aug 30th, 2026 1:22 AM.
 #   omp          429 {"type":"error","error":{"type":"rate_limit_error",…}} retry-after-ms=4479000
-# omp also relays the other two providers' words, so one pattern covers all.
-LIMIT_RE="^[^[:alnum:]]*You.ve hit your [a-z ]*limit|rate_limit_error|retry-after-ms=[0-9]"
+# Each is matched at the start of its line, so a report that merely quotes the
+# words doesn't count. omp also relays the other two providers' words.
+LIMIT_RE='^[^[:alnum:]]*You.ve hit your [a-z ]*limit|^.{0,30}429 \{"type":"error","error":\{"type":"rate_limit_error"'
 
-read_pane() { $HERDR agent read "$NAME" --source recent-unwrapped --lines 80 2>/dev/null; }
+read_pane() { hd agent read "$PANE" --source recent-unwrapped --lines 80 2>/dev/null; }
 
-# Prints the limit message and everything after it, or fails when the pane's
-# last limit message is missing or too far up to be the thing the agent
-# stopped on.
-limit_tail() {
-  local text=$1 n total
-  n=$(grep -n -E "$LIMIT_RE" <<<"$text" | tail -n 1 | cut -d: -f1)
+limit_line_no() { # pane-text; the last limit message's line number, if it's near the bottom
+  local n total
+  n=$(grep -n -E "$LIMIT_RE" <<<"$1" | tail -n 1 | cut -d: -f1)
   [ -n "$n" ] || return 1
-  total=$(wc -l <<<"$text")
+  total=$(wc -l <<<"$1")
   [ $((total - n)) -le "$TAIL_MAX" ] || return 1
-  tail -n +"$n" <<<"$text"
+  echo "$n"
 }
 
-# What the owner would change by stepping in with a message: new lines between
-# the limit message and the agent's input chrome (rules, the input box, omp's
-# powerline). Chrome below it, such as a title label appearing, doesn't count;
-# typing is caught by input_text.
-fingerprint() {
-  local rest n
+# The limit message and the lines after it, up to the agent's input chrome:
+# what the owner would add to by stepping in with a message. The chrome itself
+# (rules, the input box, omp's powerline and its title label) is cut off.
+message_region() { # limit-tail
+  local rest keep
   rest=$(tail -n +2 <<<"$1")
-  n=$(grep -n -m1 -P '^\s*(─{10,}|›|╭─|╰─)|[\x{E000}-\x{F8FF}\x{F0000}-\x{FFFFD}]' <<<"$rest" | cut -d: -f1)
-  { head -n 1 <<<"$1"; if [ -n "$n" ]; then head -n $((n - 1)) <<<"$rest"; else echo "$rest"; fi; } \
-    | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' | grep -v '^$' | sha1sum | cut -d' ' -f1
+  case $KIND in
+    claude) keep=$(grep -n -E '^[[:space:]]*─{10,}[[:space:]]*$' <<<"$rest" | tail -n 2 | head -n 1 | cut -d: -f1) ;; # the input box's top rule
+    codex) keep=$(grep -n -E '^[[:space:]]*›' <<<"$rest" | tail -n 1 | cut -d: -f1) ;;                            # the last › is the input
+    omp) keep=$(grep -n -P '\x{E0B6}' <<<"$rest" | tail -n 1 | cut -d: -f1) ;;                                    # powerline status
+  esac
+  [ -z "$keep" ] || rest=$(head -n $((keep - 1)) <<<"$rest")
+  [ "$KIND" != omp ] || rest=$(grep -v -P '[\x{E000}-\x{F8FF}\x{F0000}-\x{FFFFD}]' <<<"$rest")
+  { head -n 1 <<<"$1"; printf '%s\n' "$rest"; } | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' | grep -v '^$'
 }
 
-# The text sitting in the agent's input, empty when there is none. Dim text is
-# a placeholder, not typing.
+fingerprint() { message_region "$1" | sha1sum | cut -d' ' -f1; }
+
+# A limit already followed by a conversation is not what the agent stopped on.
+superseded() { # limit-tail
+  local after
+  after=$(message_region "$1" | tail -n +2)
+  [ "$(grep -c . <<<"$after")" -le 3 ] || return 0
+  case $KIND in
+    claude) grep -q -E '^(❯|●|⏺)' <<<"$after" ;;
+    codex) grep -q -E '^(›|•)' <<<"$after" ;;
+    *) return 1 ;;
+  esac
+}
+
+# What's in the agent's input, empty when nothing is. Dim text is a placeholder,
+# not typing. Fails when the input can't be found: never guesses it's empty.
 input_text() {
-  local marker ansi line
-  case $A_KIND in
+  local marker plain n box
+  case $KIND in
     claude) marker='❯' ;;
     codex) marker='›' ;;
     omp) marker='╰─' ;; # the editor's bottom-left corner; a finished tool box has more ─ after it
     *) return 1 ;;
   esac
-  ansi=$($HERDR agent read "$NAME" --source visible --lines 15 --format ansi 2>/dev/null) || return 1
-  line=$(printf '%s\n' "$ansi" \
-    | sed -E 's/\x1b\[2m(\x1b\[[0-9;:]*m)*[^\x1b]*//g; s/\x1b\[[0-9;:?]*[A-Za-z]//g; s/\xc2\xa0/ /g; s/\r//g' \
-    | grep -E "^[[:space:]│]*$marker([[:space:]]|$)" | tail -n 1) || return 1
-  # typed text follows the marker by one space; omp's right-aligned hint follows by many
-  sed -E "s/^[[:space:]│]*$marker//; s/^ {2,}.*//; s/^ //; s/ {3,}.*//; s/[[:space:]│]+$//" <<<"$line"
+  plain=$(hd agent read "$PANE" --source visible --lines 40 --format ansi 2>/dev/null \
+    | sed -E 's/\x1b\[2m(\x1b\[[0-9;:]*m)*[^\x1b]*//g; s/\x1b\[[0-9;:?]*[A-Za-z]//g; s/\xc2\xa0/ /g; s/\r//g') || return 1
+  n=$(grep -n -E "^[[:space:]│]*$marker([[:space:]]|$)" <<<"$plain" | tail -n 1 | cut -d: -f1)
+  [ -n "$n" ] || return 1
+  box=$(tail -n +"$n" <<<"$plain" | sed -E "1s/^[[:space:]│]*$marker//")
+  case $KIND in
+    claude) box=$(sed -E '/^[[:space:]]*─{10,}[[:space:]]*$/,$d' <<<"$box") ;;      # the input ends at the rule below it
+    codex) box=$(sed -E '/ · |for shortcuts/,$d' <<<"$box") ;;                      # …or at the status lines
+    omp) box=$(head -n 1 <<<"$box" | sed -E 's/^ //; s/ {8,}.*//') ;;               # right-aligned hint after many spaces
+  esac
+  grep -q '[^[:space:]]' <<<"$box" || return 0
+  printf '%s\n' "$box"
 }
 
-# Epoch at which the named limit resets, or nothing when the message names none.
-reset_epoch() { # message-line
-  local line=$1 tz stamp now
-  now=$(date +%s)
-  if [[ $line =~ retry-after-ms=([0-9]+) ]]; then
-    echo $((now + BASH_REMATCH[1] / 1000))
-  elif [[ $line =~ resets\ (([A-Z][a-z]{2}\ [0-9]+),\ )?([0-9]{1,2})(:([0-9]{2}))?(am|pm)\ \(([A-Za-z_/+-]+)\) ]]; then
-    tz=${BASH_REMATCH[7]}
-    stamp="${BASH_REMATCH[3]}:${BASH_REMATCH[5]:-00}${BASH_REMATCH[6]}"
-    dated_or_next "${BASH_REMATCH[2]}" "$stamp" "$tz" "$now"
-  elif [[ $line =~ try\ again\ at\ (([A-Z][a-z]{2})\ ([0-9]+)(st|nd|rd|th),\ ([0-9]{4})\ )?([0-9]{1,2}:[0-9]{2}\ [AP]M) ]]; then
-    if [ -n "${BASH_REMATCH[1]}" ]; then
-      date -d "${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[5]} ${BASH_REMATCH[6]}" +%s 2>/dev/null
-    else
-      dated_or_next "" "${BASH_REMATCH[6]}" "" "$now"
-    fi
-  fi
+nearest() { # now candidate…: the candidate closest to now
+  local now=$1 best= bd=0 c d
+  shift
+  for c; do
+    [ -n "$c" ] || continue
+    d=$((c > now ? c - now : now - c))
+    if [ -z "$best" ] || [ "$d" -lt "$bd" ]; then best=$c bd=$d; fi
+  done
+  echo "$best"
 }
 
-# A date with no year means this year, or next if that has passed. A time with
-# no date means the next such time, unless it passed under 20 minutes ago, when
-# the reset has just happened.
-dated_or_next() { # monthday time tz now; runs in a subshell, so exporting TZ is safe
-  local md=$1 time=$2 tz=$3 now=$4 cand year day
+# A named time or date carries no year or day. It means the occurrence nearest
+# to now: ahead if the reset is coming, behind if it already happened. Runs in a
+# subshell (reset_epoch is called in $(…)), so exporting TZ is safe.
+named_reset() { # monthday time tz now
+  local md=$1 time=$2 tz=$3 now=$4 day year off
   [ -z "$tz" ] || export TZ=$tz
   day=$(date -d "@$now" +%Y-%m-%d)
   if [ -n "$md" ]; then
     year=${day%%-*}
-    cand=$(date -d "$md $year $time" +%s 2>/dev/null) || return 0
-    [ "$cand" -gt $((now - 1200)) ] || cand=$(date -d "$md $((year + 1)) $time" +%s 2>/dev/null)
+    nearest "$now" "$(date -d "$md $((year - 1)) $time" +%s 2>/dev/null)" \
+      "$(date -d "$md $year $time" +%s 2>/dev/null)" "$(date -d "$md $((year + 1)) $time" +%s 2>/dev/null)"
   else
-    cand=$(date -d "$day $time" +%s 2>/dev/null) || return 0
-    [ "$cand" -gt $((now - 1200)) ] || cand=$((cand + 86400))
+    nearest "$now" "$(date -d "$day $time -1 day" +%s 2>/dev/null)" \
+      "$(date -d "$day $time" +%s 2>/dev/null)" "$(date -d "$day $time +1 day" +%s 2>/dev/null)"
   fi
-  echo "$cand"
+}
+
+# Epoch at which the named limit resets, or nothing when the message names none.
+reset_epoch() { # message-line
+  local line=$1 now at
+  now=$(date +%s)
+  if [[ $line =~ retry-after-ms=([0-9]+) ]]; then
+    # relative to the error, which is when omp last wrote its session
+    at=$now
+    [ -z "${A_SESSION:-}" ] || at=$(stat -c %Y "$A_SESSION" 2>/dev/null || echo "$now")
+    echo $((at + BASH_REMATCH[1] / 1000))
+  elif [[ $line =~ resets\ (([A-Z][a-z]{2}\ [0-9]+),\ )?([0-9]{1,2})(:([0-9]{2}))?(am|pm)\ \(([A-Za-z_/+-]+)\) ]]; then
+    named_reset "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}:${BASH_REMATCH[5]:-00}${BASH_REMATCH[6]}" "${BASH_REMATCH[7]}" "$now"
+  elif [[ $line =~ try\ again\ at\ (([A-Z][a-z]{2})\ ([0-9]+)(st|nd|rd|th),\ ([0-9]{4})\ )?([0-9]{1,2}:[0-9]{2}\ [AP]M) ]]; then
+    if [ -n "${BASH_REMATCH[1]}" ]; then
+      date -d "${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[5]} ${BASH_REMATCH[6]}" +%s 2>/dev/null
+    else
+      named_reset "" "${BASH_REMATCH[6]}" "" "$now"
+    fi
+  fi
 }
 
 mkdir -p "$STATE" || die 2 "cannot create $STATE"
@@ -167,15 +205,17 @@ case $A_STATUS in
 esac
 
 text=$(read_pane) || die 5 "cannot read $NAME's pane"
-tail=$(limit_tail "$text") || die 3 "no usage-limit message at the end of $NAME's pane"
+n=$(limit_line_no "$text") || die 3 "no usage-limit message at the end of $NAME's pane"
+tail=$(tail -n +"$n" <<<"$text")
 first=$(head -n 1 <<<"$tail")
+! superseded "$tail" || die 3 "$NAME's limit message is followed by a newer conversation"
 BASE=$(fingerprint "$tail")
 
-typed=$(input_text) || die 4 "cannot tell whether $NAME's input is empty"
+typed=$(input_text) || die 4 "cannot find $NAME's input to tell whether it's empty"
 [ -z "$typed" ] || die 4 "something is typed in $NAME's input"
 
 # One stop is sent to once: its mark is the pane, the message and the lines before it.
-key=$(printf '%s\n%s\n%s' "$PANE" "$first" "$(grep -B3 -F -x -- "$first" <<<"$text" | head -n 3)" | sha1sum | cut -d' ' -f1)
+key=$(printf '%s\n%s\n%s' "$PANE" "$first" "$(sed -n "$((n > 3 ? n - 3 : 1)),$((n - 1))p" <<<"$text")" | sha1sum | cut -d' ' -f1)
 [ ! -e "$STATE/sent-$key" ] || die 8 "already sent to $NAME for this stop"
 
 now=$(date +%s)
@@ -189,20 +229,26 @@ else
 fi
 [ $((until_epoch - now)) -le "$MAX_WAIT" ] \
   || die 6 "reset is $(((until_epoch - now) / 60)) minutes away, past the $((MAX_WAIT / 60))-minute limit"
-echo "wait-for-limit: sending at $(date -d "@$until_epoch" '+%a %d %b %H:%M %Z')"
+if [ "$until_epoch" -gt "$now" ]; then
+  echo "wait-for-limit: sending at $(date -d "@$until_epoch" '+%a %d %b %H:%M %Z')"
+else
+  echo "wait-for-limit: the reset has passed; sending now"
+fi
 
 check_owner() { # the owner is out of the way, or exit with why
   get_agent || die 5 "$NAME is gone"
+  [ "$A_WS" != w9 ] || die 8 "$NAME is now in workspace w9, which is private"
   [ "$A_PANE" = "$PANE" ] && [ "$A_KIND" = "$KIND" ] || die 5 "$NAME's pane now holds something else"
   case $A_STATUS in
     idle | done) ;;
     *) die 4 "$NAME is now $A_STATUS" ;;
   esac
   local t
-  typed=$(input_text) || die 4 "cannot tell whether $NAME's input is empty"
+  typed=$(input_text) || die 4 "cannot find $NAME's input to tell whether it's empty"
   [ -z "$typed" ] || die 4 "something is typed in $NAME's input"
-  t=$(limit_tail "$(read_pane)") || die 4 "the pane no longer ends at the limit message"
-  [ "$(fingerprint "$t")" = "$BASE" ] || die 4 "the pane shows something newer than the limit message"
+  t=$(read_pane) || die 5 "cannot read $NAME's pane"
+  n=$(limit_line_no "$t") || die 4 "the pane no longer ends at the limit message"
+  [ "$(fingerprint "$(tail -n +"$n" <<<"$t")")" = "$BASE" ] || die 4 "the pane shows something newer than the limit message"
 }
 
 while :; do
@@ -214,11 +260,14 @@ while :; do
 done
 
 check_owner
-: >"$STATE/sent-$key"
-$HERDR agent prompt "$NAME" "$MESSAGE" >/dev/null || die 7 "herdr could not deliver the message to $NAME; it may still have arrived, so nothing was resent"
+: >"$STATE/sent-$key" || die 8 "cannot record this send in $STATE, so it won't be made"
+hd agent prompt "$PANE" "$MESSAGE" >/dev/null || die 7 "herdr could not deliver the message to $NAME; it may still have arrived, so nothing was resent"
 
-for _ in $(seq 30); do
+# A quick agent can start and finish between two looks, so seeing our message
+# in its pane counts as seeing it work.
+for _ in $(seq 120); do
   get_agent && [ "$A_STATUS" = working ] && { echo "wait-for-limit: $NAME is working again"; exit 0; }
-  sleep 2
+  grep -q -F -- "$MESSAGE" <<<"$(read_pane)" && { echo "wait-for-limit: $NAME took the message and has already answered"; exit 0; }
+  sleep 0.5
 done
 die 7 "sent, but $NAME wasn't seen working within a minute; nothing resent"

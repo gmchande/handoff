@@ -22,17 +22,17 @@ cat >"$ROOT/bin/herdr" <<'EOF'
 #!/usr/bin/env bash
 echo "$*" >>"$FX/calls.log"
 [ "$1 $2" = "agent get" ] && { [ -e "$FX/gone" ] && exit 1
-  jq -n --arg s "$(cat "$FX/status")" --arg ws "$(cat "$FX/workspace")" --arg pane "$(cat "$FX/pane_id")" --arg kind "$(cat "$FX/kind")" \
-    '{result:{agent:{agent:$kind,agent_status:$s,pane_id:$pane,workspace_id:$ws}}}'; exit 0; }
+  jq -n --arg s "$(cat "$FX/status")" --arg ws "$(cat "$FX/workspace")" --arg pane "$(cat "$FX/pane_id")" --arg kind "$(cat "$FX/kind")" --arg sess "$(cat "$FX/session" 2>/dev/null)" \
+    '{result:{agent:{agent:$kind,agent_status:$s,pane_id:$pane,workspace_id:$ws,agent_session:(if $sess == "" then null else {kind:"path",value:$sess} end)}}}'; exit 0; }
 [ "$1 $2" = "agent read" ] && { case "$*" in *ansi*) cat "$FX/ansi.txt" ;; *) cat "$FX/pane.txt" ;; esac; exit 0; }
-[ "$1 $2" = "agent prompt" ] && { printf '%s\n' "$4" >>"$FX/sent.log"; [ -e "$FX/deaf" ] || echo working >"$FX/status"; exit 0; }
+[ "$1 $2" = "agent prompt" ] && { printf '%s\n' "$4" >>"$FX/sent.log"; [ -e "$FX/fast" ] && printf '%s\n' "$4" >>"$FX/pane.txt"; [ -e "$FX/deaf" ] || [ -e "$FX/fast" ] || echo working >"$FX/status"; exit 0; }
 echo "unexpected herdr call: $*" >>"$FX/calls.log"; exit 1
 EOF
 # sleep stand-in: advances the clock, then runs the scenario's hook once.
 cat >"$ROOT/bin/sleep" <<'EOF'
 #!/usr/bin/env bash
 echo "$1" >>"$FX/sleeps.log"
-echo $(( $(cat "$FX/clock") + $1 )) >"$FX/clock"
+echo $(( $(cat "$FX/clock") + ${1%.*} )) >"$FX/clock"
 [ -x "$FX/on_sleep" ] && { "$FX/on_sleep"; rm -f "$FX/on_sleep"; }
 exit 0
 EOF
@@ -71,12 +71,12 @@ screen() {
 input() {
   local typed=$1 kind=$2
   case $kind in
-    claude) printf '\e[0m\e[38;2;1;2;3m────────\e[0m\r\n\e[0m❯\xc2\xa0%s\r\n\e[0m────────\r\n  \e[0mauto mode\n' "$typed" >"$FX/ansi.txt" ;;
+    claude) printf '\e[0m\e[38;2;1;2;3m────────────────\e[0m\r\n\e[0m❯\xc2\xa0%s\r\n\e[0m────────────────\r\n  \e[0mauto mode\n' "$typed" >"$FX/ansi.txt" ;;
     codex)
       if [ -z "$typed" ]; then
-        printf '\e[0m\e[48;2;1;2;3m\e[0m\e[1m\e[48;2;1;2;3m›\e[0m\e[48;2;1;2;3m \e[0m\e[2m\e[48;2;1;2;3mAsk Codex to do anything\e[0m\e[48;2;1;2;3m      \e[0m\r\n  GPT-6.1-Sol xhigh\n' >"$FX/ansi.txt"
+        printf '\e[0m\e[48;2;1;2;3m\e[0m\e[1m\e[48;2;1;2;3m›\e[0m\e[48;2;1;2;3m \e[0m\e[2m\e[48;2;1;2;3mAsk Codex to do anything\e[0m\e[48;2;1;2;3m      \e[0m\r\n  GPT-6.1-Sol xhigh · ~/work\n' >"$FX/ansi.txt"
       else
-        printf '\e[0m\e[1m\e[48;2;1;2;3m›\e[0m\e[48;2;1;2;3m %s\e[0m\r\n  GPT-6.1-Sol xhigh\n' "$typed" >"$FX/ansi.txt"
+        printf '\e[0m\e[1m\e[48;2;1;2;3m›\e[0m\e[48;2;1;2;3m %s\e[0m\r\n  GPT-6.1-Sol xhigh · ~/work\n' "$typed" >"$FX/ansi.txt"
       fi ;;
     omp)
       if [ -z "$typed" ]; then
@@ -152,7 +152,7 @@ ok "  and sent once" sent_once
 new_case omp-label omp "$OMP_429"
 cat >"$FX/on_sleep" <<EOF
 #!/usr/bin/env bash
-printf ' Ran the checks.\n\n %s\n\n  \xf3\xb0\x8a\x9a LIMIT: Session limit reached\n\xee\x82\xb6 Haiku 5.5 \xee\x82\xb1 /tmp\n╰─\n' '$OMP_429' >"$FX/pane.txt"
+printf ' Ran the checks.\n\n %s\n\n  \xf3\xb0\x8a\x9a LIMIT: Session limit reached\n\xee\x82\xb6 Haiku 5.5 \xee\x82\xb1 /tmp\n╰─\n' "$OMP_429" >"$FX/pane.txt"
 EOF
 chmod +x "$FX/on_sleep"
 run omp-label
@@ -270,6 +270,93 @@ ok "weekly reset beyond the 8 h default: exit 6 at once, nothing sent" status_is
 ok "  and it never slept" sh -c "[ -z \"$(total_sleep)\" -o \"$(total_sleep)\" = 0 ]"
 ok "  and nothing was sent" sent_never
 
+# ---- what review found ----
+
+# A draft the owner began with a space, or over several lines, is still a draft.
+for kind in claude codex omp; do
+  msg=$CLAUDE_SESSION; [ $kind = codex ] && msg=$CODEX_TIME; [ $kind = omp ] && msg=$OMP_429
+  new_case draft-space-$kind $kind "$msg"; input " keep this draft" $kind
+  run draft-space-$kind
+  ok "$kind: a draft starting with a space is a draft: exit 4, nothing sent" sh -c "[ $STATUS = 4 ]"
+  ok "  and nothing was sent" sent_never
+done
+
+new_case draft-multiline claude "$CLAUDE_SESSION"
+printf '\e[0m❯\xc2\xa0\r\n  please do not continue\r\n  second line\r\n────────────────\r\n' >"$FX/ansi.txt"
+run draft-multiline
+ok "Claude: a draft whose first line is blank: exit 4, nothing sent" status_is 4
+ok "  and nothing was sent" sent_never
+
+new_case no-marker claude "$CLAUDE_SESSION"
+printf '  some text\n  more text\n' >"$FX/ansi.txt"
+run no-marker
+ok "an input that can't be found is not an empty one: exit 4, nothing sent" status_is 4
+ok "  and nothing was sent" sent_never
+
+new_case codex-newer codex "$CODEX_TIME"
+cat >"$FX/on_sleep" <<EOF
+#!/usr/bin/env bash
+printf '• Ran the checks.\n\n%s\n\n› Stop here. Explain the error only.\n\n• The error is the usage limit.\n\n› Ask Codex to do anything\n\n  GPT-6.1-Sol xhigh · ~/work\n  ? for shortcuts\n' "$CODEX_TIME" >"$FX/pane.txt"
+EOF
+chmod +x "$FX/on_sleep"
+run codex-newer
+ok "Codex: the owner's message (which starts with ›) and its answer: exit 4, nothing sent" status_is 4
+ok "  and nothing was sent" sent_never
+
+new_case claude-rule claude "$CLAUDE_SESSION"
+cat >"$FX/on_sleep" <<EOF
+#!/usr/bin/env bash
+printf '● Reviewed the diff.\n\n  %s\n\n──────────\n❯ carry on, I raised the limit\n● On it.\n──────────\n❯\n──────────\n  ⏵⏵ auto mode on\n' "$CLAUDE_SESSION" >"$FX/pane.txt"
+EOF
+chmod +x "$FX/on_sleep"
+run claude-rule
+ok "Claude: a newer message after a rule in the pane: exit 4, nothing sent" status_is 4
+ok "  and nothing was sent" sent_never
+
+new_case quoted-omp omp "$CLAUDE_SESSION"
+printf ' The test expects rate_limit_error to be handled, and retry-after-ms=4000 to be parsed.\n\n All checks pass.\n\n\xee\x82\xb6 Haiku 5.5\n╰─\n' >"$FX/pane.txt"
+run quoted-omp
+ok "omp: a report that mentions rate_limit_error is not a limit: exit 3" status_is 3
+
+new_case superseded claude "$CLAUDE_SESSION"
+printf '  %s\n\n❯ I fixed it; only explain the problem.\n\n● Explanation complete.\n\n──────────\n❯\n──────────\n' "$CLAUDE_SESSION" >"$FX/pane.txt"
+run superseded
+ok "a limit already followed by a newer conversation: exit 3, nothing sent" status_is 3
+ok "  and nothing was sent" sent_never
+
+new_case no-marker-file claude "$CLAUDE_SESSION"
+mkdir -p "$ROOT/state-no-marker-file"; : >"$ROOT/state-no-marker-file/agentx.lock"; chmod a-w "$ROOT/state-no-marker-file"
+run no-marker-file
+chmod u+w "$ROOT/state-no-marker-file"
+ok "the send can't be recorded: exit 8 and nothing sent" sh -c "[ $STATUS = 8 ]"
+ok "  and nothing was sent" sent_never
+
+new_case dst claude "$CLAUDE_SESSION" 2026-10-31T23:00:00Z   # 19:00 EDT; clocks go back before the next 6am
+sed -i 's/resets 4:40pm/resets 6am/' "$FX/pane.txt"
+run dst --max-wait 100000
+ok "next 6am across the fall DST change is 12 h away, not 13: waits 43200 s + 120" sh -c "[ $STATUS = 0 ] && [ \"$(total_sleep)\" = 43320 ]"
+
+new_case passed-hours claude "$CLAUDE_SESSION" 2026-10-22T21:30:00Z   # 17:30, 4:40pm passed 50 minutes ago
+run passed-hours
+ok "a named time that passed 50 minutes ago has reset: sends at once" sh -c "[ $STATUS = 0 ] && [ -z \"$(total_sleep)\" ]"
+
+new_case passed-dated claude "$CLAUDE_WEEKLY" 2026-10-25T06:00:00Z   # Oct 25 02:00 Toronto, an hour after the named 1am
+run passed-dated
+ok "a named date an hour ago has reset: sends at once, not next year" sh -c "[ $STATUS = 0 ] && [ -z \"$(total_sleep)\" ]"
+
+new_case omp-aged omp "$OMP_429" 2026-10-22T20:30:00Z   # started 16:30; the error was written at 15:25:20 EDT
+touch -d 2026-10-22T19:25:20Z "$FX/session.jsonl"; echo "$FX/session.jsonl" >"$FX/session"
+run omp-aged
+ok "omp: retry-after counts from the error, not from when the waiter started (599 s + 120)" sh -c "[ $STATUS = 0 ] && [ \"$(total_sleep)\" = 719 ]"
+
+new_case twice-distinct claude "$CLAUDE_SESSION"
+run twice-distinct
+printf '  %s\n\n❯ more work\n● I tried again.\n\n  %s\n\n──────────\n❯\n──────────\n' "$CLAUDE_SESSION" "$CLAUDE_SESSION" >"$FX/pane.txt"
+echo idle >"$FX/status"; rm "$FX/sent.log"
+run twice-distinct
+ok "a new stop with the same words as an older sent one is sent to" sh -c "[ $STATUS = 0 ]"
+ok "  once" sent_once
+
 # ---- never twice, never in workspace 9, bad input ----
 
 new_case twice claude "$CLAUDE_SESSION"
@@ -298,6 +385,11 @@ ok "agent in workspace w9: exit 8, only 'agent get' was called" sh -c "[ $STATUS
 new_case deaf claude "$CLAUDE_SESSION"; touch "$FX/deaf"
 run deaf
 ok "message sent but the agent never works: exit 7, sent once, not resent" sh -c "[ $STATUS = 7 ]"
+ok "  one message" sent_once
+
+new_case fast claude "$CLAUDE_SESSION"; touch "$FX/fast"
+run fast
+ok "an agent that answers between two looks has still worked: exit 0, sent once" sh -c "[ $STATUS = 0 ]"
 ok "  one message" sent_once
 
 STATUS=; ERR=$(PATH="$ROOT/bin:$PATH" "$SCRIPT" w3:pF2 2>&1 >/dev/null); STATUS=$?
