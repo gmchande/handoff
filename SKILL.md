@@ -60,9 +60,11 @@ would otherwise have to correct afterwards. Every brief gives:
   the smallest change that meets that need, and offers a choice only where a
   real one exists.
 - **How it reports:** by ending its turn, which your wait picks up. It never
-  types into your pane, where its words would look like the user's. When it
-  needs the user, for a look, a choice, or a live run, it ends its turn and
-  says what it needs and why.
+  types into your pane, where its words would look like the user's. Its
+  report and its pull request list the calls it made on its own that the user
+  might have made otherwise, and why; a run that goes on for hours keeps that
+  list in a file as it goes. When it needs the user, for a look, a choice, or
+  a live run, it ends its turn and says what it needs and why.
 - **Room to object.** When the agent doubts an assumption or sees a better
   way, it stops and says so before building that part, instead of complying
   or quietly working around it: a test bent to pass can hide a real
@@ -71,17 +73,18 @@ would otherwise have to correct afterwards. Every brief gives:
 
 A build brief also gives:
 
-- **The check, and irrefutable proof it works end to end.** The builder runs
-  the check, tries the change as a user would, and brings back what it ran
-  and saw (output, screenshots) and what it couldn't check. When the full
-  check is slow, it runs only the parts its change touches while it works,
-  and the full check once, when you tell it the work is ready to merge. A
-  rebase alone doesn't call for another run: your own run on what merges
-  covers it.
-- **Its reviewer, by name.** Once the parts of the check its change touches
-  pass, the builder asks the reviewer to review its diff
-  (`herdr agent prompt REVIEWER "..." --wait`), and fixes what holds up before
-  it pushes. On a pull request, it answers the review comments the same way.
+- **The check, and irrefutable proof it works end to end.** The builder
+  tries the change as a user would, and brings back what it ran and saw
+  (output, screenshots) and what it couldn't check. It runs the parts of the
+  check its change touches. The full check runs once on what merges, before
+  it reaches anyone it could hurt: the repo's rules say when and who runs it,
+  and without them the builder runs it on its final commit.
+- **Its reviewer, by name, when it has one.** Once the parts of the check its
+  change touches pass, the builder asks the reviewer for one review of its
+  diff (`herdr agent prompt REVIEWER "..." --wait`), fixes what holds up
+  before it pushes, and lists those fixes in its report, so you read them
+  rather than send a second round. On a pull request, it answers the review
+  comments the same way.
 - **Where to stop.** By default the builder commits, then pushes or opens a
   pull request as the user's and the repo's rules say; where neither says,
   it stops with the work uncommitted. When the user's go comes later, relay
@@ -97,20 +100,21 @@ names.
 - Each builder gets its own tab, named after it, with the builder on the left
   and its reviewer on the right. Label each pane with its agent's name.
 - Each builder also gets its own worktree, and is told which files the others
-  are changing. Never edit alongside a builder. A builder whose change
-  touches another's files builds on that branch, points its pull request at
-  it, and rebases whenever it moves.
-- Every builder gets a reviewer from another model: by default Codex with the
-  newest Sol at `xhigh`, or a Claude model when the builder runs Sol, through
-  any client. The
-  reviewer changes no code and stays until the work merges. It checks the
+  are changing. Never edit alongside a builder. Work on files another builder
+  is changing goes to that builder once its change merges: building on an
+  unmerged branch means rebasing whenever it moves.
+- A change that runs commands, touches files or the network, could lose
+  data, touches auth, money, prices, currency, or time, or loosens a check
+  gets a reviewer from another model: by default Codex with the newest Sol at
+  `xhigh`, or a Claude model when the builder runs Sol, through any client.
+  The reviewer changes no code and stays until the work merges. It checks the
   code rather than the taste, writes each report to a file, and replies with
-  a summary, so closing its pane loses nothing. Work that ships nothing, such
-  as a review or ideas for the user to pick from, gets no reviewer.
+  a summary, so closing its pane loses nothing. Other changes get the pull
+  request's AI review and your read of the diff.
 - Send a builder its own follow-ups, since it already knows the work: fixes,
-  review findings, rebases, and new work on its files or its unmerged branch.
-  Anything else goes to a fresh builder, because a long session makes every
-  turn cost more. Another session's idle agent isn't yours.
+  review findings, rebases, and new work on its files. Anything else goes to
+  a fresh builder, because a long session makes every turn cost more.
+  Another session's idle agent isn't yours.
 - Run about three builders at once and queue the rest, unless the user asks
   for more: more slow the machine's test runs, outpace your reviews, and use
   up the reviewers' quota.
@@ -122,6 +126,9 @@ names.
   the user is already idle, so wait for it to start working, then to stop.
 - A wait that times out proves nothing: read the pane, and wait again without
   sending the message again.
+- A builder stopped by a usage limit is waiting on the clock: read the reset
+  time it shows, check the time with `date`, wake yourself then with a
+  background command, and send it on unless the user has stopped it since.
 - A turn's end is a report, not proof the work is done: read it with
   `herdr agent read`. If the builder stops with work still open and names no
   blocker, send a short message saying what's open; after two or three such
@@ -142,14 +149,15 @@ names.
 
 ## Judge the result
 
-- The builder's "done" is evidence, not the result. Read its run of the
-  check: it ran to the end, on the commit you'll merge, with no failure. Run
-  the check yourself only when what you merge differs from what ran (after a
-  rebase, or when you merge several changes together), or when you can't see
-  the run.
-- Read the reviewer's report and the pull request's comments, not just the
-  builder's summary, and never wait for an AI review. Every review is input,
-  not authority: check each finding against the code.
+- The builder's "done" is evidence, not the result. Read its runs, and the
+  full check's run on what merges: each ran to the end, with no failure. A
+  test run covers only the tree it ran on; a review's or a hands-on check's
+  verdict still holds after a rebase that left the patch identical
+  (`git patch-id`). Ask for a rebase only when the branch conflicts.
+- Read the reviewer's report, the fixes the builder lists for it, and the
+  pull request's comments, not just the builder's summary, and never wait for
+  an AI review. Every review is input, not authority: check each finding
+  against the code.
 - Judge the proof of what a user would see. Any gap in it is unverified, not
   done.
 - Read the diff against the brief, and for what the next agent will copy: a

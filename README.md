@@ -5,7 +5,7 @@ tab of its own, where you can watch it. `handoff` is the Agent Skill that
 carries the task across: it writes the brief, launches the builder in a
 [Herdr](https://herdr.dev) tab, waits properly, and judges what comes back.
 
-It is one file of about 170 lines, and a short launch reference. Herdr
+It is one file of about 190 lines, and a short launch reference. Herdr
 already knows how to split a pane, start a known agent, submit a prompt, and
 say when that agent has settled, so the skill carries none of the run
 directories, lifecycle hooks, completion markers, or per-terminal launch code
@@ -58,16 +58,17 @@ for you.
   read what the builder says, send it back with what's still open, and hand
   dialogs to you rather than answer them.
 - **The builder gives irrefutable proof it works end to end.** It runs the
-  check and tries the change the way a user would, then hands back what it ran
-  and saw as real output and screenshots. When no check covers the change,
-  building one is part of the task.
-- **Every change gets a reviewer from another model.** Each builder has its
-  own (from another model, changing no code) before it pushes, you judge its
-  proof, and a pull request's AI review, when it comments, catches what's
-  left.
-- **The builder's "done" is evidence, not the result.** You read its run of
-  the check, run the check yourself when what you'd merge differs from what
-  ran, and read the diff against the brief before anything ships.
+  parts of the check its change touches and tries the change the way a user
+  would, then hands back what it ran and saw as real output and screenshots.
+  When no check covers the change, building one is part of the task.
+- **A risky change gets a reviewer from another model.** A change that runs
+  commands, touches files or the network, could lose data, or touches money
+  gets one round of review (from another model, changing no code) before it
+  pushes. You judge the proof and read the diff, and a pull request's AI
+  review, when it comments, catches what's left.
+- **The builder's "done" is evidence, not the result.** You read its runs,
+  see that the full check runs once on what merges, and read the diff against
+  the brief before anything ships.
 - **Mistakes get fixed where they stick.** When a builder gets something wrong
   that could happen again, the fix goes into the code, a check, or the repo's
   instructions, so the next builder can't repeat it.

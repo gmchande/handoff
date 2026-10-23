@@ -10,10 +10,10 @@ herdr agent start NAME --kind KIND --pane PANE_ID -- ARGS
 herdr agent prompt NAME "$(cat BRIEF_FILE)" --wait --timeout 7200000             # from a file: inline, the brief's backticks and $ would run
 ```
 
-Before starting a fresh agent, upgrade its CLI (with mise:
-`MISE_MINIMUM_RELEASE_AGE=0 mise upgrade TOOL`, naming the tool as `mise ls`
-does). If Herdr's socket asks for approval, handle it the way your own harness
-does.
+Once a day, before the day's first launch, upgrade each agent's CLI (with
+mise: `MISE_MINIMUM_RELEASE_AGE=0 mise upgrade TOOL`, naming the tool as
+`mise ls` does). If Herdr's socket asks for approval, handle it the way your
+own harness does.
 
 ## Agents
 
@@ -27,9 +27,13 @@ does.
 
 Any other Herdr kind works with its own arguments.
 
-- When the user names no agent, a coding task goes to `omp` with
-  `anthropic/claude-opus-5-5`, and research, design, and other exploration go
-  to `opus`, since Claude Code carries the user's skills and MCP tools.
+- When the user names no agent, hard or risky code goes to `omp` with
+  `anthropic/claude-opus-5-5`, and routine code you can name in advance
+  (tests only, docs, a mechanical refactor, copy) to `omp` with
+  `anthropic/claude-sonnet-5-5`. Research, design, and other exploration go
+  to `opus`, since Claude Code carries the user's skills and MCP tools. When
+  an account is out of room, give the task to another account's agent rather
+  than wait.
 - Effort is `high` for Claude models and `xhigh` for Codex models, unless the
   user names another level.
 - A nickname ("sol", "opus", "fable") means the newest model id that carries
