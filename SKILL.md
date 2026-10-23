@@ -102,7 +102,8 @@ names.
 - Find your own pane in the live pane list, by title and cwd, before you
   change the layout: inherited `HERDR_*` values can be stale.
 - Each builder gets its own tab, named after it, with the builder on the left
-  and its reviewer on the right. Label each pane with its agent's name.
+  and its reviewer on the right, and a checker of its change below them.
+  Label each pane with its agent's name.
 - Each builder also gets its own worktree, and is told which files the others
   are changing. Never edit alongside a builder. Work on files another builder
   is changing goes to that builder once its change merges: building on an
