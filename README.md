@@ -32,6 +32,8 @@ your agent to hand the work to another one.
 - [Herdr](https://herdr.dev), and a session running inside it (`HERDR_ENV=1`).
 - The builder's own CLI, installed and authenticated: Claude Code, Codex,
   Cursor, or any other kind Herdr knows.
+- `jq`, for `wait-for-limit`, the script that carries a builder past a usage
+  limit. `test-wait-for-limit.sh` proves it against stand-ins for Herdr.
 
 ## Use
 

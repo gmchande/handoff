@@ -126,9 +126,14 @@ names.
   the user is already idle, so wait for it to start working, then to stop.
 - A wait that times out proves nothing: read the pane, and wait again without
   sending the message again.
-- A builder stopped by a usage limit is waiting on the clock: read the reset
-  time it shows, check the time with `date`, wake yourself then with a
-  background command, and send it on unless the user has stopped it since.
+- A builder stopped by a usage limit is waiting on the clock. Run
+  `wait-for-limit NAME` (in this skill's directory) in the background, like
+  any wait: it confirms the limit, sleeps until the reset, checks the user
+  hasn't stepped in, sends the builder one message to carry on, and exits once
+  it's working. Exit 0 means it's working again; 3 no limit found, 4 the user
+  stepped in, 5 the agent is gone, 6 the reset is past `--max-wait` (default
+  8 hours), 7 sent but not seen working, 8 refused. Read the pane on any
+  nonzero exit and decide; never send by hand what the script already sent.
 - A turn's end is a report, not proof the work is done: read it with
   `herdr agent read`. If the builder stops with work still open and names no
   blocker, send a short message saying what's open; after two or three such

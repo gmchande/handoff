@@ -1,0 +1,224 @@
+#!/usr/bin/env bash
+# wait-for-limit AGENT [--max-wait SECONDS]
+#
+# Carries a Herdr agent past a usage limit: confirms the agent stopped on one,
+# sleeps until it resets, checks the owner hasn't stepped in, sends one
+# message to carry on, and exits once the agent is working again.
+#
+# Exit status:
+#   0  sent; the agent is working again
+#   2  usage error
+#   3  no limit found (the agent isn't stopped on a usage limit)
+#   4  the owner stepped in (new message, typed input, or agent no longer idle)
+#   5  the agent is gone
+#   6  the wait would run past --max-wait (default 28800 = 8h); nothing sent
+#   7  sent, but the agent wasn't seen working within a minute; never resent
+#   8  refused: workspace w9, or another wait-for-limit already holds this agent
+#
+# Test hooks: HERDR (the herdr binary), LIMIT_WAIT_STATE (state dir),
+# LIMIT_WAIT_POLL (seconds between checks while waiting), LIMIT_WAIT_MARGIN
+# (seconds added after the named reset), LIMIT_WAIT_DEFAULT (seconds waited
+# when the message names no time).
+
+set -u
+export LC_ALL=C.UTF-8
+
+HERDR=${HERDR:-herdr}
+STATE=${LIMIT_WAIT_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/limit-wait}
+POLL=${LIMIT_WAIT_POLL:-300}
+MARGIN=${LIMIT_WAIT_MARGIN:-120}
+DEFAULT_WAIT=${LIMIT_WAIT_DEFAULT:-1800}
+MAX_WAIT=28800
+MESSAGE="Your usage limit has reset. Carry on from where you stopped."
+TAIL_MAX=20 # a limit message further up than this is old news
+
+die() { # status message
+  printf 'wait-for-limit: %s\n' "$2" >&2
+  exit "$1"
+}
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    --max-wait) MAX_WAIT=${2:-}; shift 2 || die 2 "--max-wait needs seconds" ;;
+    -*) die 2 "unknown option $1" ;;
+    *) [ -z "${NAME:-}" ] || die 2 "one agent name only"; NAME=$1; shift ;;
+  esac
+done
+[ -n "${NAME:-}" ] || die 2 "usage: wait-for-limit AGENT [--max-wait SECONDS]"
+[[ $NAME =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || die 2 "AGENT must be a Herdr agent name, not '$NAME'"
+[[ $MAX_WAIT =~ ^[0-9]+$ ]] || die 2 "--max-wait needs whole seconds"
+
+# Only ever addresses the one named agent: never lists agents, so it cannot
+# read or touch another pane, including anything in workspace 9.
+
+get_agent() { # sets A_PANE A_KIND A_STATUS A_WS; false when the agent is gone
+  local json
+  json=$($HERDR agent get "$NAME" 2>/dev/null) || return 1
+  A_PANE=$(jq -r '.result.agent.pane_id // empty' <<<"$json") || return 1
+  A_KIND=$(jq -r '.result.agent.agent // empty' <<<"$json")
+  A_STATUS=$(jq -r '.result.agent.agent_status // empty' <<<"$json")
+  A_WS=$(jq -r '.result.agent.workspace_id // empty' <<<"$json")
+  [ -n "$A_PANE" ]
+}
+
+# The words each agent really prints when it stops on a limit:
+#   Claude Code  You've hit your session limit · resets 4:40pm (America/Toronto)
+#                You've hit your weekly limit · resets Oct 25, 1am (America/Toronto)
+#                You've hit your monthly spend limit · raise it at … · your weekly limit resets Oct 25, 1am (…)
+#   Codex        You've hit your usage limit. … or try again at 6:26 PM.
+#                … try again at Aug 30th, 2026 1:22 AM.
+#   omp          429 {"type":"error","error":{"type":"rate_limit_error",…}} retry-after-ms=4479000
+# omp also relays the other two providers' words, so one pattern covers all.
+LIMIT_RE="^[^[:alnum:]]*You.ve hit your [a-z ]*limit|rate_limit_error|retry-after-ms=[0-9]"
+
+read_pane() { $HERDR agent read "$NAME" --source recent-unwrapped --lines 80 2>/dev/null; }
+
+# Prints the limit message and everything after it, or fails when the pane's
+# last limit message is missing or too far up to be the thing the agent
+# stopped on.
+limit_tail() {
+  local text=$1 n total
+  n=$(grep -n -E "$LIMIT_RE" <<<"$text" | tail -n 1 | cut -d: -f1)
+  [ -n "$n" ] || return 1
+  total=$(wc -l <<<"$text")
+  [ $((total - n)) -le "$TAIL_MAX" ] || return 1
+  tail -n +"$n" <<<"$text"
+}
+
+# What the owner would change by stepping in with a message: new lines between
+# the limit message and the agent's input chrome (rules, the input box, omp's
+# powerline). Chrome below it, such as a title label appearing, doesn't count;
+# typing is caught by input_text.
+fingerprint() {
+  local rest n
+  rest=$(tail -n +2 <<<"$1")
+  n=$(grep -n -m1 -P '^\s*(─{10,}|›|╭─|╰─)|[\x{E000}-\x{F8FF}\x{F0000}-\x{FFFFD}]' <<<"$rest" | cut -d: -f1)
+  { head -n 1 <<<"$1"; if [ -n "$n" ]; then head -n $((n - 1)) <<<"$rest"; else echo "$rest"; fi; } \
+    | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' | grep -v '^$' | sha1sum | cut -d' ' -f1
+}
+
+# The text sitting in the agent's input, empty when there is none. Dim text is
+# a placeholder, not typing.
+input_text() {
+  local marker ansi line
+  case $A_KIND in
+    claude) marker='❯' ;;
+    codex) marker='›' ;;
+    omp) marker='╰─' ;; # the editor's bottom-left corner; a finished tool box has more ─ after it
+    *) return 1 ;;
+  esac
+  ansi=$($HERDR agent read "$NAME" --source visible --lines 15 --format ansi 2>/dev/null) || return 1
+  line=$(printf '%s\n' "$ansi" \
+    | sed -E 's/\x1b\[2m(\x1b\[[0-9;:]*m)*[^\x1b]*//g; s/\x1b\[[0-9;:?]*[A-Za-z]//g; s/\xc2\xa0/ /g; s/\r//g' \
+    | grep -E "^[[:space:]│]*$marker([[:space:]]|$)" | tail -n 1) || return 1
+  # typed text follows the marker by one space; omp's right-aligned hint follows by many
+  sed -E "s/^[[:space:]│]*$marker//; s/^ {2,}.*//; s/^ //; s/ {3,}.*//; s/[[:space:]│]+$//" <<<"$line"
+}
+
+# Epoch at which the named limit resets, or nothing when the message names none.
+reset_epoch() { # message-line
+  local line=$1 tz stamp now
+  now=$(date +%s)
+  if [[ $line =~ retry-after-ms=([0-9]+) ]]; then
+    echo $((now + BASH_REMATCH[1] / 1000))
+  elif [[ $line =~ resets\ (([A-Z][a-z]{2}\ [0-9]+),\ )?([0-9]{1,2})(:([0-9]{2}))?(am|pm)\ \(([A-Za-z_/+-]+)\) ]]; then
+    tz=${BASH_REMATCH[7]}
+    stamp="${BASH_REMATCH[3]}:${BASH_REMATCH[5]:-00}${BASH_REMATCH[6]}"
+    dated_or_next "${BASH_REMATCH[2]}" "$stamp" "$tz" "$now"
+  elif [[ $line =~ try\ again\ at\ (([A-Z][a-z]{2})\ ([0-9]+)(st|nd|rd|th),\ ([0-9]{4})\ )?([0-9]{1,2}:[0-9]{2}\ [AP]M) ]]; then
+    if [ -n "${BASH_REMATCH[1]}" ]; then
+      date -d "${BASH_REMATCH[2]} ${BASH_REMATCH[3]} ${BASH_REMATCH[5]} ${BASH_REMATCH[6]}" +%s 2>/dev/null
+    else
+      dated_or_next "" "${BASH_REMATCH[6]}" "" "$now"
+    fi
+  fi
+}
+
+# A date with no year means this year, or next if that has passed. A time with
+# no date means the next such time, unless it passed under 20 minutes ago, when
+# the reset has just happened.
+dated_or_next() { # monthday time tz now; runs in a subshell, so exporting TZ is safe
+  local md=$1 time=$2 tz=$3 now=$4 cand year day
+  [ -z "$tz" ] || export TZ=$tz
+  day=$(date -d "@$now" +%Y-%m-%d)
+  if [ -n "$md" ]; then
+    year=${day%%-*}
+    cand=$(date -d "$md $year $time" +%s 2>/dev/null) || return 0
+    [ "$cand" -gt $((now - 1200)) ] || cand=$(date -d "$md $((year + 1)) $time" +%s 2>/dev/null)
+  else
+    cand=$(date -d "$day $time" +%s 2>/dev/null) || return 0
+    [ "$cand" -gt $((now - 1200)) ] || cand=$((cand + 86400))
+  fi
+  echo "$cand"
+}
+
+mkdir -p "$STATE" || die 2 "cannot create $STATE"
+
+get_agent || die 5 "no agent named $NAME"
+[ "$A_WS" != w9 ] || die 8 "$NAME is in workspace w9, which is private"
+PANE=$A_PANE KIND=$A_KIND
+
+exec 9>"$STATE/$NAME.lock"
+flock -n 9 || die 8 "another wait-for-limit already holds $NAME"
+
+case $A_STATUS in
+  idle | done) ;;
+  *) die 3 "$NAME is $A_STATUS, not stopped on a limit" ;;
+esac
+
+text=$(read_pane) || die 5 "cannot read $NAME's pane"
+tail=$(limit_tail "$text") || die 3 "no usage-limit message at the end of $NAME's pane"
+first=$(head -n 1 <<<"$tail")
+BASE=$(fingerprint "$tail")
+
+typed=$(input_text) || die 4 "cannot tell whether $NAME's input is empty"
+[ -z "$typed" ] || die 4 "something is typed in $NAME's input"
+
+# One stop is sent to once: its mark is the pane, the message and the lines before it.
+key=$(printf '%s\n%s\n%s' "$PANE" "$first" "$(grep -B3 -F -x -- "$first" <<<"$text" | head -n 3)" | sha1sum | cut -d' ' -f1)
+[ ! -e "$STATE/sent-$key" ] || die 8 "already sent to $NAME for this stop"
+
+now=$(date +%s)
+reset=$(reset_epoch "$first")
+if [ -n "$reset" ]; then
+  until_epoch=$((reset + MARGIN))
+  echo "wait-for-limit: $NAME hit a limit: ${first:0:200}"
+else
+  until_epoch=$((now + DEFAULT_WAIT))
+  echo "wait-for-limit: $NAME hit a limit naming no reset time; waiting $((DEFAULT_WAIT / 60)) minutes"
+fi
+[ $((until_epoch - now)) -le "$MAX_WAIT" ] \
+  || die 6 "reset is $(((until_epoch - now) / 60)) minutes away, past the $((MAX_WAIT / 60))-minute limit"
+echo "wait-for-limit: sending at $(date -d "@$until_epoch" '+%a %d %b %H:%M %Z')"
+
+check_owner() { # the owner is out of the way, or exit with why
+  get_agent || die 5 "$NAME is gone"
+  [ "$A_PANE" = "$PANE" ] && [ "$A_KIND" = "$KIND" ] || die 5 "$NAME's pane now holds something else"
+  case $A_STATUS in
+    idle | done) ;;
+    *) die 4 "$NAME is now $A_STATUS" ;;
+  esac
+  local t
+  typed=$(input_text) || die 4 "cannot tell whether $NAME's input is empty"
+  [ -z "$typed" ] || die 4 "something is typed in $NAME's input"
+  t=$(limit_tail "$(read_pane)") || die 4 "the pane no longer ends at the limit message"
+  [ "$(fingerprint "$t")" = "$BASE" ] || die 4 "the pane shows something newer than the limit message"
+}
+
+while :; do
+  now=$(date +%s)
+  left=$((until_epoch - now))
+  [ "$left" -gt 0 ] || break
+  sleep "$((left < POLL ? left : POLL))"
+  check_owner
+done
+
+check_owner
+: >"$STATE/sent-$key"
+$HERDR agent prompt "$NAME" "$MESSAGE" >/dev/null || die 7 "herdr could not deliver the message to $NAME; it may still have arrived, so nothing was resent"
+
+for _ in $(seq 30); do
+  get_agent && [ "$A_STATUS" = working ] && { echo "wait-for-limit: $NAME is working again"; exit 0; }
+  sleep 2
+done
+die 7 "sent, but $NAME wasn't seen working within a minute; nothing resent"
