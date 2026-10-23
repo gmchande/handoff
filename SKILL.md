@@ -73,6 +73,19 @@ would otherwise have to correct afterwards. Every brief gives:
 
 A build brief also gives:
 
+- **What must stay true:** the rules the change keeps in every state and at
+  every hour, beyond the case that was seen, with the case as an example
+  ("the index and the stocks read the same way at every hour; today, at
+  06:22, they don't").
+- **A restatement first, for a non-trivial brief:** the builder's first
+  reply gives the problem, the outcome and what must stay true in its own
+  words, and you correct it before it builds.
+- **Its blast radius before review:** the builder names what else its change
+  could break beyond the diff (code it shares, timing, anything kept in step
+  with the screen), and proves the one fact it's safe because of with a run,
+  not prose.
+- **A time limit on any investigation:** when the cause isn't clear within
+  about 30 minutes, the builder reports what it knows and asks.
 - **The check, and irrefutable proof it works end to end.** The builder
   tries the change as a user would, through the project's scripted journeys
   where it has them, and brings back what it ran and saw (output,
