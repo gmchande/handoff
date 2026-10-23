@@ -13,8 +13,8 @@
 #   5  the agent is gone
 #   6  the wait would run past --max-wait (default 28800 = 8h); nothing sent
 #   7  sent, but the agent wasn't seen working within a minute; never resent
-#   8  refused: workspace w9, another wait-for-limit holds this agent, or this
-#      stop was already sent to
+#   8  refused: another wait-for-limit holds this agent, or this stop was
+#      already sent to
 #
 # It looks at the agent's name once, then addresses its pane id, so a name that
 # moves can't redirect it. It never lists agents. Typing in the few
@@ -55,13 +55,12 @@ done
 [[ $NAME =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || die 2 "AGENT must be a Herdr agent name, not '$NAME'"
 [[ $MAX_WAIT =~ ^[0-9]+$ ]] || die 2 "--max-wait needs whole seconds"
 
-get_agent() { # sets A_PANE A_KIND A_STATUS A_WS A_SESSION; false when the agent is gone
+get_agent() { # sets A_PANE A_KIND A_STATUS A_SESSION; false when the agent is gone
   local json
   json=$(hd agent get "$NAME" 2>/dev/null) || return 1
   A_PANE=$(jq -r '.result.agent.pane_id // empty' <<<"$json") || return 1
   A_KIND=$(jq -r '.result.agent.agent // empty' <<<"$json")
   A_STATUS=$(jq -r '.result.agent.agent_status // empty' <<<"$json")
-  A_WS=$(jq -r '.result.agent.workspace_id // empty' <<<"$json")
   A_SESSION=$(jq -r '.result.agent.agent_session | select(.kind == "path") | .value // empty' <<<"$json")
   [ -n "$A_PANE" ]
 }
@@ -193,7 +192,6 @@ reset_epoch() { # message-line
 mkdir -p "$STATE" || die 2 "cannot create $STATE"
 
 get_agent || die 5 "no agent named $NAME"
-[ "$A_WS" != w9 ] || die 8 "$NAME is in workspace w9, which is private"
 PANE=$A_PANE KIND=$A_KIND
 
 exec 9>"$STATE/$NAME.lock"
@@ -237,7 +235,6 @@ fi
 
 check_owner() { # the owner is out of the way, or exit with why
   get_agent || die 5 "$NAME is gone"
-  [ "$A_WS" != w9 ] || die 8 "$NAME is now in workspace w9, which is private"
   [ "$A_PANE" = "$PANE" ] && [ "$A_KIND" = "$KIND" ] || die 5 "$NAME's pane now holds something else"
   case $A_STATUS in
     idle | done) ;;

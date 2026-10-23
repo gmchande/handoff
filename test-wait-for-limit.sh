@@ -378,10 +378,6 @@ run lock
 ok "two waits at once on one agent: the second exits 8, one message sent" sh -c "[ $STATUS = 0 ] && [ \"$(cat "$FX/second.status")\" = 8 ]"
 ok "  one message" sent_once
 
-new_case w9 claude "$CLAUDE_SESSION"; echo w9 >"$FX/workspace"
-run w9
-ok "agent in workspace w9: exit 8, only 'agent get' was called" sh -c "[ $STATUS = 8 ] && [ \"\$(cat $FX/calls.log)\" = 'agent get agentx' ]"
-
 new_case deaf claude "$CLAUDE_SESSION"; touch "$FX/deaf"
 run deaf
 ok "message sent but the agent never works: exit 7, sent once, not resent" sh -c "[ $STATUS = 7 ]"

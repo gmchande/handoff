@@ -74,11 +74,15 @@ would otherwise have to correct afterwards. Every brief gives:
 A build brief also gives:
 
 - **The check, and irrefutable proof it works end to end.** The builder
-  tries the change as a user would, and brings back what it ran and saw
-  (output, screenshots) and what it couldn't check. It runs the parts of the
-  check its change touches. The full check runs once on what merges, before
-  it reaches anyone it could hurt: the repo's rules say when and who runs it,
-  and without them the builder runs it on its final commit.
+  tries the change as a user would, through the project's scripted journeys
+  where it has them, and brings back what it ran and saw (output,
+  screenshots) and what it couldn't check. For a change the user can see or
+  touch, that's evidence, not the verdict: once the pull request is ready,
+  start its independent check by an agent that didn't build it (the `tophat`
+  skill). It runs the parts of the check its change touches. The full check
+  runs once on what merges, before it reaches anyone it could hurt: the
+  repo's rules say when and who runs it, and without them the builder runs it
+  on its final commit.
 - **Its reviewer, by name, when it has one.** Once the parts of the check its
   change touches pass, the builder asks the reviewer for one review of its
   diff (`herdr agent prompt REVIEWER "..." --wait`), fixes what holds up
