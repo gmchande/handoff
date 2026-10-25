@@ -19,7 +19,7 @@ own harness does.
 
 | Agent | Kind | Args |
 | --- | --- | --- |
-| `opus` | claude | `--model opus --effort high` |
+| `opus` | claude | `--model opus --effort high`, or `--effort xhigh` for research and design |
 | `claude` | claude | configured defaults, which aren't `opus` |
 | `codex` | codex | `-m MODEL -c model_reasoning_effort=xhigh` |
 | `cursor` | cursor | configured default; override with `--model MODEL` |
@@ -31,9 +31,10 @@ Any other Herdr kind works with its own arguments.
   `anthropic/claude-opus-5-5` at `high`, and routine code you can name in
   advance (tests only, docs, a mechanical refactor, copy) to the same model
   at `medium`, never a smaller model (the user, 23 October). Research,
-  design, and other exploration go to `opus`, since Claude Code carries the
-  user's skills and MCP tools. When an account is out of room, give the task
-  to another account's agent rather than wait.
+  design, and other exploration go to `opus` at `xhigh` (the user, 24
+  October), since Claude Code carries the user's skills and MCP tools. When
+  an account is out of room, give the task to another account's agent rather
+  than wait.
 - Effort is `high` for Claude models and `xhigh` for Codex models, unless the
   user names another level or the line above does.
 - A nickname ("sol", "opus", "fable") means the newest model id that carries
