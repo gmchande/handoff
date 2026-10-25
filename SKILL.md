@@ -84,8 +84,8 @@ A build brief also gives:
   could break beyond the diff (code it shares, timing, anything kept in step
   with the screen), and proves the one fact it's safe because of with a run,
   not prose.
-- **A time limit on any investigation:** when the cause isn't clear within
-  about 30 minutes, the builder reports what it knows and asks.
+- **A stop on any investigation:** once the builder's first guesses at the
+  cause have failed, it reports what it knows and asks, instead of digging on.
 - **The check, and irrefutable proof it works end to end.** The builder
   tries the change as a user would, through the project's scripted journeys
   where it has them, and brings back what it ran and saw (output,
