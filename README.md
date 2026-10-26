@@ -24,8 +24,8 @@ git clone https://github.com/gmchande/handoff ~/.claude/skills/handoff
 
 That is the Claude Code path. For another client, clone into its skills
 directory instead (`~/.codex/skills`, `~/.cursor/skills`), or clone once and
-symlink into each. Then invoke it with `/handoff` or `$handoff`; agents never
-pick it up on their own.
+symlink into each. Then invoke it with `/handoff`, `$handoff`, or just tell
+your agent to hand the work to another one.
 
 ## Requirements
 
