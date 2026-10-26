@@ -129,13 +129,15 @@ names.
   code rather than the taste, writes each report to a file, and replies with
   a summary, so closing its pane loses nothing. Other changes get the pull
   request's AI review and your read of the diff.
-- Send a builder its own follow-ups, since it already knows the work: fixes,
-  review findings, rebases, and new work on its files. Anything else goes to
-  a fresh builder, because a long session makes every turn cost more.
-  Another session's idle agent isn't yours.
-- Run about three builders at once and queue the rest, unless the user asks
-  for more: more slow the machine's test runs, outpace your reviews, and use
-  up the reviewers' quota.
+- Send work to the agent that already knows it: a builder's own fixes,
+  review findings, rebases and new work on its files, and an investigator's
+  fixes for what it found. Anything else goes to a fresh builder, because a
+  long session makes every turn cost more. Another session's idle agent
+  isn't yours.
+- Give each builder a sizeable chunk, such as every fix from one
+  investigation, on one branch with one reviewer: today's models handle it,
+  and each extra builder and reviewer is another session to brief, wait on
+  and pay for. Split work only where its parts must ship apart.
 
 ## Wait
 
