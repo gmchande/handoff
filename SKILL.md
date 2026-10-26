@@ -1,11 +1,11 @@
 ---
 name: handoff
 description: >
-  Hands a task, plan, or review to another coding agent in a Herdr pane, then
-  judges what comes back. Use when the user asks to hand off, delegate, or
-  "send this to" an agent (opus, claude, codex, cursor, omp, or any Herdr
-  kind), or invokes /handoff or $handoff. Not for passing your own seat to a
-  successor.
+  Explicit use only. Run this skill only when the user invokes it by name
+  (/handoff or $handoff); never choose it on your own. Hands a task, plan,
+  or review to another coding agent in a Herdr pane, then judges what comes
+  back. Not for passing your own seat to a successor.
+disable-model-invocation: true
 ---
 
 # Handoff
