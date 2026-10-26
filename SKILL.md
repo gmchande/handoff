@@ -92,7 +92,8 @@ A build brief also gives:
   screenshots) and what it couldn't check. For a change the user can see or
   touch, that's evidence, not the verdict: once the pull request is ready,
   start its independent check by an agent that didn't build it (the `tophat`
-  skill). It runs the parts of the check its change touches. The full check
+  skill), briefed from its `check-brief.md` with nothing added. It runs the
+  parts of the check its change touches. The full check
   runs once on what merges, before it reaches anyone it could hurt: the
   repo's rules say when and who runs it, and without them the builder runs it
   on its final commit.
