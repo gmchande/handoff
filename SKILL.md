@@ -200,7 +200,7 @@ names.
 
 ## Close out
 
-When a builder's work merges:
+When a builder's work merges, or an investigator's or checker's report is in:
 
 1. Find its tab by the builder's name at that moment (`herdr agent get NAME`
    gives `.result.agent.tab_id`): a stale pane ID can close the agent next to
@@ -210,3 +210,5 @@ When a builder's work merges:
    two panes, each found by name.
 3. Check with `herdr agent list` that every other agent is still there.
 4. Remove its worktree.
+5. Move its brief, and its reviewer's, to where the project keeps finished
+   briefs (its AGENTS.md says where).
