@@ -128,8 +128,9 @@ names.
   `xhigh`, or a Claude model when the builder runs Sol, through any client.
   The reviewer changes no code and stays until the work merges. It checks the
   code rather than the taste, writes each report to a file, and replies with
-  a summary, so closing its pane loses nothing. Other changes get the pull
-  request's AI review and your read of the diff.
+  a summary, so closing its pane loses nothing. Brief it from
+  `review-brief.md`. Other changes get the pull request's AI review and your
+  read of the diff.
 - Send work to the agent that already knows it: a builder's own fixes,
   review findings, rebases and new work on its files, and an investigator's
   fixes for what it found. Anything else goes to a fresh builder, because a
