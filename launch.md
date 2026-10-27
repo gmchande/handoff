@@ -16,8 +16,7 @@ exits 7 when the agent still doesn't start: read its pane then, and never
 send the brief again by hand.
 
 Once a day, before the day's first launch, upgrade each agent's CLI (with
-mise: `MISE_MINIMUM_RELEASE_AGE=0 mise upgrade TOOL`, naming the tool as
-`mise ls` does). If Herdr's socket asks for approval, handle it the way your
+mise: `mise upgrade TOOL`, naming the tool as `mise ls` does). If Herdr's socket asks for approval, handle it the way your
 own harness does.
 
 ## Agents
