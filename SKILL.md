@@ -106,10 +106,8 @@ A build brief also gives:
   diff (`herdr agent prompt REVIEWER "..." --wait`), fixes what holds up
   before it pushes, and lists those fixes in its report, so you read them
   rather than send a second round. When a fix needs a second look, the
-  builder runs Codex's own review on the fix commit (`codex review --commit
-  SHA`, at high effort) and saves its report beside the first; the reviewer's
-  pane closes after its first review. On a pull request, it answers the
-  review comments the same way.
+  builder asks the same reviewer to check it. On a pull request, it answers
+  the review comments the same way.
 - **Where to stop.** By default the builder commits, then pushes or opens a
   pull request as the user's and the repo's rules say; where neither says,
   it stops with the work uncommitted. When the user's go comes later, relay
@@ -134,7 +132,7 @@ names.
   data, touches auth, money, prices, currency, or time, or loosens a check
   gets a reviewer from another model: by default Codex with the newest Sol at
   `xhigh`, or a Claude model when the builder runs Sol, through any client.
-  The reviewer changes no code and closes after its first review. It checks the
+  The reviewer changes no code and stays until the work merges. It checks the
   code rather than the taste, writes each report to a file, and replies with
   a summary, so closing its pane loses nothing. Brief it from
   `review-brief.md`. Other changes get the pull request's AI review and your

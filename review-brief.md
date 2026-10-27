@@ -11,4 +11,4 @@ introduced. List anything that was already wrong before it separately, marked
 pre-existing. "No findings" is a good result. When the builder asks you to look
 again, check its fixes by reading the code it changed. Write your own test only
 when reading the code can't tell you whether a fix works. Write each report to
-REPORT_DIR/review-N.md and reply with a summary.
+REPORT_DIR/review-N.md and reply with a summary. Stay until the work merges.
