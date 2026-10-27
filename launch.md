@@ -27,16 +27,16 @@ own harness does.
 
 Any other Herdr kind works with its own arguments.
 
-- When the user names no agent, hard or risky code goes to `omp` with
-  `anthropic/claude-opus-5-5` at `high`, and routine code you can name in
-  advance (tests only, docs, a mechanical refactor, copy) to the same model
-  at `medium`, never a smaller model (the user, 23 October). Research,
+- When the user names no agent, code goes to `omp` with
+  `anthropic/claude-opus-5-5` at `medium`, or at `high` when the brief says
+  it's hard or risky, never a smaller model (the user, 23 and 26 October). Research,
   design, and other exploration go to `opus` at `xhigh` (the user, 24
   October), since Claude Code carries the user's skills and MCP tools. When
   an account is out of room, give the task to another account's agent rather
   than wait.
 - Effort is `high` for Claude models and `xhigh` for Codex models, unless the
   user names another level or the line above does.
+- An independent checker runs at `medium` (the user, 26 October).
 - A nickname ("sol", "opus", "fable") means the newest model id that carries
   it: pass that id. Codex lists its models in `~/.codex/models_cache.json`,
   and its default is `model` in `~/.codex/config.toml`. omp lists its models

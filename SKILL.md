@@ -58,13 +58,17 @@ would otherwise have to correct afterwards. Every brief gives:
   one suggested direction steers the whole result. A design starts from what
   the person is trying to do and where today's design fails them, asks for
   the smallest change that meets that need, and offers a choice only where a
-  real one exists.
+  real one exists. A choice for the user shows every option at once, as
+  pictures or a switcher, each with what it gets and what it costs, and names
+  the default the work follows if they haven't answered by a set time.
 - **How it reports:** by ending its turn, which your wait picks up. It never
   types into your pane, where its words would look like the user's. Its
   report and its pull request list the calls it made on its own that the user
   might have made otherwise, and why; a run that goes on for hours keeps that
   list in a file as it goes. When it needs the user, for a look, a choice, or
-  a live run, it ends its turn and says what it needs and why.
+  a live run, it ends its turn and says what it needs and why. Its turn ends
+  with ten lines at most: the pull request, what ran and passed, what it
+  fixed, the calls it made, and what it needs.
 - **Room to object.** When the agent doubts an assumption or sees a better
   way, it stops and says so before building that part, instead of complying
   or quietly working around it: a test bent to pass can hide a real
@@ -101,8 +105,11 @@ A build brief also gives:
   change touches pass, the builder asks the reviewer for one review of its
   diff (`herdr agent prompt REVIEWER "..." --wait`), fixes what holds up
   before it pushes, and lists those fixes in its report, so you read them
-  rather than send a second round. On a pull request, it answers the review
-  comments the same way.
+  rather than send a second round. When a fix needs a second look, the
+  builder runs Codex's own review on the fix commit (`codex review --commit
+  SHA`, at high effort) and saves its report beside the first; the reviewer's
+  pane closes after its first review. On a pull request, it answers the
+  review comments the same way.
 - **Where to stop.** By default the builder commits, then pushes or opens a
   pull request as the user's and the repo's rules say; where neither says,
   it stops with the work uncommitted. When the user's go comes later, relay
@@ -119,14 +126,15 @@ names.
   and its reviewer on the right, and a checker of its change below them.
   Label each pane with its agent's name.
 - Each builder also gets its own worktree, and is told which files the others
-  are changing. Never edit alongside a builder. Work on files another builder
-  is changing goes to that builder once its change merges: building on an
-  unmerged branch means rebasing whenever it moves.
+  are changing. Never edit alongside a builder. Builders work in parallel
+  from the working branch's last passing commit, even on the same files. The
+  one that merges second rebases once, just before its final full runs.
+  Nobody builds on an unmerged branch.
 - A change that runs commands, touches files or the network, could lose
   data, touches auth, money, prices, currency, or time, or loosens a check
   gets a reviewer from another model: by default Codex with the newest Sol at
   `xhigh`, or a Claude model when the builder runs Sol, through any client.
-  The reviewer changes no code and stays until the work merges. It checks the
+  The reviewer changes no code and closes after its first review. It checks the
   code rather than the taste, writes each report to a file, and replies with
   a summary, so closing its pane loses nothing. Brief it from
   `review-brief.md`. Other changes get the pull request's AI review and your
@@ -214,3 +222,6 @@ When a builder's work merges, or an investigator's or checker's report is in:
 4. Remove its worktree.
 5. Move its brief, and its reviewer's, to where the project keeps finished
    briefs (its AGENTS.md says where).
+6. Ask whether the system would catch this change's mistakes by itself next
+   time, and make each a test, a lint rule or a script; words in a skill come
+   last.
