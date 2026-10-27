@@ -7,8 +7,13 @@ herdr tab create --workspace WORKSPACE --cwd "$CHECKOUT" --label NAME --no-focus
 herdr pane split --pane BUILDER_PANE --direction right --cwd "$CHECKOUT" --no-focus   # its reviewer: .result.pane.pane_id
 herdr pane rename PANE_ID NAME
 herdr agent start NAME --kind KIND --pane PANE_ID -- ARGS
-herdr agent prompt NAME "$(cat BRIEF_FILE)" --wait --timeout 7200000             # from a file: inline, the brief's backticks and $ would run
+./send-brief NAME BRIEF_FILE                     # in this skill's directory; from a file: inline, the brief's backticks and $ would run
+herdr agent wait NAME --timeout 7200000          # then its turn's end
 ```
+
+`send-brief` presses Enter once when omp leaves a pasted brief unsent, and
+exits 7 when the agent still doesn't start: read its pane then, and never
+send the brief again by hand.
 
 Once a day, before the day's first launch, upgrade each agent's CLI (with
 mise: `MISE_MINIMUM_RELEASE_AGE=0 mise upgrade TOOL`, naming the tool as
