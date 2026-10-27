@@ -34,8 +34,10 @@ The agent has none of your conversation. Brief a builder from
 - **What must stay true:** the rules the change keeps in every state and at
   every hour, with the case seen as an example ("the index and the stocks
   read the same way at every hour; today, at 06:22, they don't").
-- **Where to stop:** by default it commits and pushes or opens a pull
-  request as the repo's rules say, or else stops with the work uncommitted.
+- **Where to stop:** the first point where someone else can act, in a
+  brief and in every later message. By default it commits and pushes or
+  opens a pull request as the repo's rules say, or else stops with the work
+  uncommitted.
 
 Size the brief to the change: a 25-line fix needs a few lines, since the
 repo's instruction files already cover style, branches and what done means.
